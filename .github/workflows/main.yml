@@ -25,9 +25,6 @@ jobs:
       version: ""
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Clean workspace
         run: Remove-Item -Recurse -Force *.* -ErrorAction Ignore
         shell: powershell
