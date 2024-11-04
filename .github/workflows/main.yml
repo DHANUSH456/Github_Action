@@ -6,19 +6,21 @@ on:
       IS_PRECONFIGURED:
         description: 'Is this a preconfigured build?'
         required: false
-        default: 'false'
+        default: 'true'
       BUILD_RELEASE:
         description: 'Release version if preconfigured'
         required: false
+        default: '24.5.0'
       PACKAGE_NAME:
         description: 'Package name if preconfigured'
         required: false
+        default: 'xstore-components-update-Ug31.0_Ug31.0_Ins31.0_x752_20241028-095120.jar'
 
 jobs:
   upgrade-jar-release:
     runs-on: windows-latest
     env:
-      DFS_UPGRADES_DIRECTORY: "C:\\Users\\vdh\\Desktop\\New folder"
+      DFS_UPGRADES_DIRECTORY: "${{ github.workspace }}"
       NOTIFICATION_EMAIL_LIST: ""
       DFS_ONERETAIL: ""
       build: ""
@@ -50,6 +52,8 @@ jobs:
           }
 
           # Construct the path correctly
+          Remove-Item -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\$version" -Recurse -Force -ErrorAction Ignore
+          New-Item -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\$version" -ItemType Directory -Force
           $packagePath = "${{ env.DFS_UPGRADES_DIRECTORY }}\$version"
           Write-Host "Checking package path: $packagePath"
 
