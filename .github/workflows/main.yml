@@ -49,7 +49,16 @@ jobs:
               }
           }
 
-          $pckgList = Get-ChildItem -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\$version" -Filter *.jar | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
+          # Construct the path correctly
+          $packagePath = "${{ env.DFS_UPGRADES_DIRECTORY }}\$version"
+          Write-Host "Checking package path: $packagePath"
+
+          if (-not (Test-Path $packagePath)) {
+              Write-Error "Package path does not exist: $packagePath"
+              exit 1
+          }
+
+          $pckgList = Get-ChildItem -Path $packagePath -Filter *.jar | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
           if (-not $pckgList) {
               Write-Error "No package found in the specified directory."
               exit 1
