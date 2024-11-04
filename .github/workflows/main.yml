@@ -53,7 +53,7 @@ jobs:
 
           # Construct the path correctly
           Remove-Item -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\$version" -Recurse -Force -ErrorAction Ignore
-          New-Item -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\$version" -ItemType Directory -Force
+          New-Item -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\$version\xstore-components-update-Ug31.0_Ug31.0_Ins31.0_x752_20241028-095120.jar" -ItemType Directory -Force
           $packagePath = "${{ env.DFS_UPGRADES_DIRECTORY }}\$version"
           Write-Host "Checking package path: $packagePath"
 
