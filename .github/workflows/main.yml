@@ -103,8 +103,10 @@ jobs:
           $streamInput = 'X' + $versionArr[0] + "." + $versionArr[1]
           $preStr = "xstore-components-update-"
 
-          # Correctly using the build variable
-          $buildSubstring = ${{ env.build }}.Substring($preStr.Length)
+          # Use the correct syntax to access the build variable
+          $build = '${{ env.build }}'
+          $buildSubstring = $build.Substring($preStr.Length)
+
           $xenvSubversion = $buildSubstring.Split("_")[0].Replace(".", "_")
           $xstoreSubversion = $buildSubstring.Split("_")[1].Replace(".", "_")
           $xservicesSubversion = $buildSubstring.Split("_")[2].Replace(".", "_")
