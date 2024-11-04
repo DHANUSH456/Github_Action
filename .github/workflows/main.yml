@@ -105,27 +105,33 @@ jobs:
 
           # Use the correct syntax to access the build variable
           $build = '${{ env.build }}'
-          $buildSubstring = $build.Substring($preStr.Length)
 
-          $xenvSubversion = $buildSubstring.Split("_")[0].Replace(".", "_")
-          $xstoreSubversion = $buildSubstring.Split("_")[1].Replace(".", "_")
-          $xservicesSubversion = $buildSubstring.Split("_")[2].Replace(".", "_")
-          $releaseVersion = "$xenvSubversion.$xstoreSubversion.$xservicesSubversion" -replace '[^0-9_.]', ''
+          if (-not [string]::IsNullOrEmpty($build) -and $build.Length -ge $preStr.Length) {
+              $buildSubstring = $build.Substring($preStr.Length)
 
-          if (-not $xstoreSubversion.EndsWith('0')) {
-              $xstoreSubversionArr = $xstoreSubversion.Split('_')
-              $streamInput += "-" + $xstoreSubversionArr[0] -replace '[^0-9_.]', ''
-          }
+              $xenvSubversion = $buildSubstring.Split("_")[0].Replace(".", "_")
+              $xstoreSubversion = $buildSubstring.Split("_")[1].Replace(".", "_")
+              $xservicesSubversion = $buildSubstring.Split("_")[2].Replace(".", "_")
+              $releaseVersion = "$xenvSubversion.$xstoreSubversion.$xservicesSubversion" -replace '[^0-9_.]', ''
 
-          $parentFolderRelease = "$streamInput_$releaseVersion"
-
-          # Trigger the build job
-          $buildJob = @{
-              job = 'OneRetail/PRD/Releases_Bundles/Build_Full_Bundle'
-              inputs = @{
-                  Environment = 'PRD_V18'
-                  Version = $parentFolderRelease
+              if (-not $xstoreSubversion.EndsWith('0')) {
+                  $xstoreSubversionArr = $xstoreSubversion.Split('_')
+                  $streamInput += "-" + $xstoreSubversionArr[0] -replace '[^0-9_.]', ''
               }
+
+              $parentFolderRelease = "$streamInput_$releaseVersion"
+
+              # Trigger the build job
+              $buildJob = @{
+                  job = 'OneRetail/PRD/Releases_Bundles/Build_Full_Bundle'
+                  inputs = @{
+                      Environment = 'PRD_V18'
+                      Version = $parentFolderRelease
+                  }
+              }
+          } else {
+              Write-Error "Build variable is empty or too short."
+              exit 1
           }
         shell: powershell
 
