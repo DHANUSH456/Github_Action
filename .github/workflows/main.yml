@@ -49,7 +49,7 @@ jobs:
               }
           }
 
-          $pckgList = Get-ChildItem -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\\$version" -Filter *.jar | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
+          $pckgList = Get-ChildItem -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\$version" -Filter *.jar | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
           if (-not $pckgList) {
               Write-Error "No package found in the specified directory."
               exit 1
