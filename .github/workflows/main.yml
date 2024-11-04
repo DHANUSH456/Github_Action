@@ -1,4 +1,4 @@
-name: Upgrade Jar Release
+name: LVM_UPGRADE_RELEASE_JAR
 
 on:
   workflow_dispatch:
@@ -17,20 +17,20 @@ on:
 jobs:
   upgrade-jar-release:
     runs-on: windows-latest
+    env:
+      DFS_UPGRADES_DIRECTORY: ""
+      NOTIFICATION_EMAIL_LIST: ""
+      DFS_ONERETAIL: ""
+      build: ""
+      version: ""
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set Up Environment Variables
-        run: |
-          echo "DFS_UPGRADES_DIRECTORY=${{ secrets.DFS_UPGRADES_DIRECTORY }}" >> $GITHUB_ENV
-          echo "FO_NOTIFICATION_EMAIL_LIST=${{ secrets.FO_NOTIFICATION_EMAIL_LIST }}" >> $GITHUB_ENV
-
-      - name: Prepare Workspace
-        run: |
-          Write-Host "Cleaning workspace..."
-          Remove-Item -Recurse -Force .\*
+      - name: Clean workspace
+        run: Remove-Item -Recurse -Force *.* -ErrorAction Ignore
+        shell: powershell
 
       - name: Choose Package
         id: choose-package
@@ -42,11 +42,11 @@ jobs:
           if ($isPreconfigured) {
               $version = '${{ github.event.inputs.BUILD_RELEASE }}'
           } else {
-              $relList = Get-ChildItem -Path $env:DFS_UPGRADES_DIRECTORY | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
+              $relList = Get-ChildItem -Path ${{ env.DFS_UPGRADES_DIRECTORY }} | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
               $version = ${{ inputs.Release }} # Input needs to be set manually
           }
 
-          $pckgList = Get-ChildItem -Path "$env:DFS_UPGRADES_DIRECTORY\$version" -Filter *.jar | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
+          $pckgList = Get-ChildItem -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\\$version" -Filter *.jar | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
           if ($isPreconfigured) {
               $build = '${{ github.event.inputs.PACKAGE_NAME }}'
           } else {
@@ -61,15 +61,16 @@ jobs:
               exit 1
           }
 
-          echo "version=$version" >> $GITHUB_ENV
-          echo "build=$build" >> $GITHUB_ENV
+          ${{ env.version }} = $version
+          ${{ env.build }} = $build
+        shell: powershell
 
       - name: Copy Jar to Final Location
         run: |
-          $upgraderJarFullPath = "$env:DFS_UPGRADES_DIRECTORY\$env:version\"
-          $sourceTargetFile = "$upgraderJarFullPath$env:build"
+          $upgraderJarFullPath = "${{ env.DFS_UPGRADES_DIRECTORY }}\\${{ env.version }}\\"
+          $sourceTargetFile = "$upgraderJarFullPath${{ env.build }}"
           $finalJarPath = "$upgraderJarFullPath\PRD_JAR"
-          $finalTargetFile = "$finalJarPath\$env:build"
+          $finalTargetFile = "$finalJarPath\\${{ env.build }}"
 
           if (-not (Test-Path $finalJarPath)) {
               New-Item -ItemType Directory -Path $finalJarPath
@@ -77,6 +78,7 @@ jobs:
 
           Write-Host "Copying $sourceTargetFile to $finalTargetFile"
           Copy-Item -Path $sourceTargetFile -Destination $finalTargetFile
+        shell: powershell
 
       - name: Generate Factory
         id: generate-factory
@@ -84,9 +86,9 @@ jobs:
           $versionArr = '${{ env.version }}'.Split('.')
           $streamInput = 'X' + $versionArr[0] + "." + $versionArr[1]
           $preStr = "xstore-components-update-"
-          $xenvSubversion = ($env:build.Substring($preStr.Length)).Split("_")[0].Replace(".", "_")
-          $xstoreSubversion = ($env:build.Substring($preStr.Length)).Split("_")[1].Replace(".", "_")
-          $xservicesSubversion = ($env:build.Substring($preStr.Length)).Split("_")[2].Replace(".", "_")
+          $xenvSubversion = (${{ env.build }}.Substring($preStr.Length)).Split("_")[0].Replace(".", "_")
+          $xstoreSubversion = (${{ env.build }}.Substring($preStr.Length)).Split("_")[1].Replace(".", "_")
+          $xservicesSubversion = (${{ env.build }}.Substring($preStr.Length)).Split("_")[2].Replace(".", "_")
           $releaseVersion = "$xenvSubversion.$xstoreSubversion.$xservicesSubversion".ReplaceAll("[^\\d_.]", "")
 
           if (-not $xstoreSubversion.EndsWith('0')) {
@@ -98,13 +100,13 @@ jobs:
 
           # Trigger the build job
           $buildJob = @{
-              job = 'OneRetail/PRD/Releases_Bundles/Build_Full_Bundle'
+              job = 'C:\Users\vdh\Desktop\New folder'
               inputs = @{
                   Environment = 'PRD_V18'
                   Version = $parentFolderRelease
               }
           }
-          # This part would need a GitHub action to trigger another workflow or job if applicable
+        shell: powershell
 
       - name: Send Upgrade Jar Release Notification
         run: |
@@ -112,10 +114,8 @@ jobs:
           $msg = "Please find the details for the upgrade jar and metainstaller to be used for PRD upgrade:"
           $msg += "<table id='info'>"
           $msg += "<tr><td><b>Upgrade jar DFS path</b></td><td>$finalJarPath</td></tr>"
-          $msg += "<tr><td><b>Upgrade jar name</b></td><td>$env:build</td></tr>"
+          $msg += "<tr><td><b>Upgrade jar name</b></td><td>${{ env.build }}</td></tr>"
           $msg += "<tr><td><b>Metainstaller DFS path</b></td><td>$env:DFS_ONERETAIL\PRD_V18</td></tr>"
           $msg += "<tr><td><b>Metainstaller folder</b></td><td>$parentFolderRelease</td></tr>"
           $msg += "</table>"
-
-          # Sending email will require an external service or an integration
-          # Here we can output the message to console or log as an alternative
+        shell: powershell
