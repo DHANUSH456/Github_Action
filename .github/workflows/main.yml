@@ -18,7 +18,7 @@ jobs:
   upgrade-jar-release:
     runs-on: windows-latest
     env:
-      DFS_UPGRADES_DIRECTORY: ""
+      DFS_UPGRADES_DIRECTORY: "C:\\Users\\vdh\\Desktop\\New folder"
       NOTIFICATION_EMAIL_LIST: ""
       DFS_ONERETAIL: ""
       build: ""
@@ -35,7 +35,7 @@ jobs:
           $isPreconfigured = '${{ github.event.inputs.IS_PRECONFIGURED }}' -eq 'true'
           $version = ''
           $build = ''
-          
+
           if ($isPreconfigured) {
               $version = '${{ github.event.inputs.BUILD_RELEASE }}'
               $build = '${{ github.event.inputs.PACKAGE_NAME }}'
