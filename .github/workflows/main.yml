@@ -40,14 +40,14 @@ jobs:
               $version = '${{ github.event.inputs.BUILD_RELEASE }}'
           } else {
               $relList = Get-ChildItem -Path ${{ env.DFS_UPGRADES_DIRECTORY }} | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
-              $version = ${{ inputs.Release }} # Input needs to be set manually
+              $version = ${{ inputs.Release }}
           }
 
           $pckgList = Get-ChildItem -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\\$version" -Filter *.jar | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
           if ($isPreconfigured) {
               $build = '${{ github.event.inputs.PACKAGE_NAME }}'
           } else {
-              $build = ${{ inputs.Package }} # Input needs to be set manually
+              $build = ${{ inputs.Package }}
           }
 
           Write-Host "Version: $version"
@@ -97,7 +97,7 @@ jobs:
 
           # Trigger the build job
           $buildJob = @{
-              job = 'C:\Users\vdh\Desktop\New folder'
+              job = 'OneRetail/PRD/Releases_Bundles/Build_Full_Bundle'
               inputs = @{
                   Environment = 'PRD_V18'
                   Version = $parentFolderRelease
