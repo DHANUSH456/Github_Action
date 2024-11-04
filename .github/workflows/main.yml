@@ -28,26 +28,31 @@ jobs:
       - name: Clean workspace
         run: Remove-Item -Recurse -Force *.* -ErrorAction Ignore
         shell: powershell
-
+      
       - name: Choose Package
         id: choose-package
         run: |
           $isPreconfigured = '${{ github.event.inputs.IS_PRECONFIGURED }}' -eq 'true'
           $version = ''
           $build = ''
-
+          
           if ($isPreconfigured) {
               $version = '${{ github.event.inputs.BUILD_RELEASE }}'
+              $build = '${{ github.event.inputs.PACKAGE_NAME }}'
           } else {
               $relList = Get-ChildItem -Path ${{ env.DFS_UPGRADES_DIRECTORY }} | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
-              $version = ${{ inputs.Release }}
+              if ($relList.Count -gt 0) {
+                  $version = $relList[0]
+              } else {
+                  Write-Error "No releases found."
+                  exit 1
+              }
           }
 
           $pckgList = Get-ChildItem -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\\$version" -Filter *.jar | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
-          if ($isPreconfigured) {
-              $build = '${{ github.event.inputs.PACKAGE_NAME }}'
-          } else {
-              $build = ${{ inputs.Package }}
+          if (-not $pckgList) {
+              Write-Error "No package found in the specified directory."
+              exit 1
           }
 
           Write-Host "Version: $version"
@@ -58,8 +63,9 @@ jobs:
               exit 1
           }
 
-          ${{ env.version }} = $version
-          ${{ env.build }} = $build
+          # Set environment variables correctly
+          [System.Environment]::SetEnvironmentVariable('version', $version, [System.EnvironmentVariableTarget]::Process)
+          [System.Environment]::SetEnvironmentVariable('build', $build, [System.EnvironmentVariableTarget]::Process)
         shell: powershell
 
       - name: Copy Jar to Final Location
