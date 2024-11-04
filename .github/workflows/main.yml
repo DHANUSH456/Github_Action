@@ -102,14 +102,17 @@ jobs:
           $versionArr = '${{ env.version }}'.Split('.')
           $streamInput = 'X' + $versionArr[0] + "." + $versionArr[1]
           $preStr = "xstore-components-update-"
-          $xenvSubversion = (${{ env.build }}.Substring($preStr.Length)).Split("_")[0].Replace(".", "_")
-          $xstoreSubversion = (${{ env.build }}.Substring($preStr.Length)).Split("_")[1].Replace(".", "_")
-          $xservicesSubversion = (${{ env.build }}.Substring($preStr.Length)).Split("_")[2].Replace(".", "_")
-          $releaseVersion = "$xenvSubversion.$xstoreSubversion.$xservicesSubversion".ReplaceAll("[^\\d_.]", "")
+
+          # Correctly using the build variable
+          $buildSubstring = ${{ env.build }}.Substring($preStr.Length)
+          $xenvSubversion = $buildSubstring.Split("_")[0].Replace(".", "_")
+          $xstoreSubversion = $buildSubstring.Split("_")[1].Replace(".", "_")
+          $xservicesSubversion = $buildSubstring.Split("_")[2].Replace(".", "_")
+          $releaseVersion = "$xenvSubversion.$xstoreSubversion.$xservicesSubversion" -replace '[^0-9_.]', ''
 
           if (-not $xstoreSubversion.EndsWith('0')) {
               $xstoreSubversionArr = $xstoreSubversion.Split('_')
-              $streamInput += "-" + $xstoreSubversionArr[0].ReplaceAll("[^\\d_.]", "")
+              $streamInput += "-" + $xstoreSubversionArr[0] -replace '[^0-9_.]', ''
           }
 
           $parentFolderRelease = "$streamInput_$releaseVersion"
