@@ -99,11 +99,14 @@ jobs:
       - name: Generate Factory
         id: generate-factory
         run: |
+          Write-Host "${{ env.version }}"
+          Write-Host "${{ env.branch }}"
           $versionArr = '${{ env.version }}'.Split('.')
+          Write-Host "$versionArr[0]"
+          Write-Host "$versionArr[1]"
           $streamInput = 'X' + $versionArr[0] + "." + $versionArr[1]
           $preStr = "xstore-components-update-"
 
-          # Use the correct syntax to access the build variable
           $build = '${{ env.build }}'
 
           if (-not [string]::IsNullOrEmpty($build) -and $build.Length -ge $preStr.Length) {
@@ -123,7 +126,7 @@ jobs:
 
               # Trigger the build job
               $buildJob = @{
-                  job = 'OneRetail/PRD/Releases_Bundles/Build_Full_Bundle'
+                  job = ''
                   inputs = @{
                       Environment = 'PRD_V18'
                       Version = $parentFolderRelease
