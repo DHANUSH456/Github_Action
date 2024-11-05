@@ -23,6 +23,8 @@ jobs:
       DFS_UPGRADES_DIRECTORY: "${{ github.workspace }}"
       NOTIFICATION_EMAIL_LIST: ""
       DFS_ONERETAIL: ""
+      VERSION: "${{ github.event.inputs.BUILD_RELEASE }}"
+      BUILD: "${{ github.event.inputs.PACKAGE_NAME }}"
 
     steps:
       - name: Clean workspace
@@ -79,13 +81,7 @@ jobs:
               exit 1
           }
 
-          # Set environment variables for future steps using $GITHUB_ENV
-          echo "VERSION=$version" >> $GITHUB_ENV
-          echo "BUILD=$build" >> $GITHUB_ENV
         shell: powershell
-        env:
-          VERSION: "${{ github.event.inputs.BUILD_RELEASE }}"
-          BUILD: "${{ github.event.inputs.PACKAGE_NAME }}"
 
       - name: Print Version and Build (next step)
         run: |
