@@ -14,7 +14,7 @@ on:
       PACKAGE_NAME:
         description: 'Package name if preconfigured'
         required: false
-        default: 'xstore-components-update-Ug31.0_Ug31.0_Ins31.0_x752_20241028-095120.jar'
+        default: 'xstore-components-update-Ug31.0_Ug31.0_Ins31.0_x752_20241028-095120'
 
 jobs:
   upgrade-jar-release:
