@@ -96,7 +96,7 @@ jobs:
       - name: Generate Factory
         id: generate-factory
         run: |
-          $versionArr = '${{ env.version }}'.Split('.')
+          $versionArr = '$env:version'.Split('.')
           $streamInput = 'X' + $versionArr[0] + "." + $versionArr[1]
           $preStr = "xstore-components-update-"
           $xenvSubversion = ($env:build.Substring($preStr.Length)).Split("_")[0].Replace(".", "_")
