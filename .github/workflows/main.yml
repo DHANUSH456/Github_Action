@@ -14,7 +14,7 @@ on:
       PACKAGE_NAME:
         description: 'Package name if preconfigured'
         required: false
-        default: 'xstore-components-update-Ug31.0_Ug31.0_Ins31.0_x752_20241028-095120'
+        default: 'xstore-components-update-Ug31.0_Ug31.0_Ins31.0_x752_20241028-095120.jar'
 
 jobs:
   upgrade-jar-release:
@@ -23,8 +23,8 @@ jobs:
       DFS_UPGRADES_DIRECTORY: "${{ github.workspace }}"
       NOTIFICATION_EMAIL_LIST: ""
       DFS_ONERETAIL: ""
-      VERSION: "${{ github.event.inputs.BUILD_RELEASE }}"
-      BUILD: "${{ github.event.inputs.PACKAGE_NAME }}"
+      VERSION: ""
+      BUILD: ""
 
     steps:
       - name: Clean workspace
@@ -35,12 +35,12 @@ jobs:
         id: choose-package
         run: |
           $isPreconfigured = '${{ github.event.inputs.IS_PRECONFIGURED }}' -eq 'true'
-          $version = ''
-          $build = ''
+          $version = ""
+          $build = ""
 
           if ($isPreconfigured) {
-              $version = '${{ github.event.inputs.BUILD_RELEASE }}'
-              $build = '${{ github.event.inputs.PACKAGE_NAME }}'
+              $version = "${{ github.event.inputs.BUILD_RELEASE }}"
+              $build = "${{ github.event.inputs.PACKAGE_NAME }}"
           } else {
               $relList = Get-ChildItem -Path ${{ env.DFS_UPGRADES_DIRECTORY }} | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
               if ($relList.Count -gt 0) {
@@ -81,6 +81,8 @@ jobs:
               exit 1
           }
 
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+          echo "BUILD=$build" >> $env:GITHUB_ENV
         shell: powershell
 
       - name: Print Version and Build (next step)
