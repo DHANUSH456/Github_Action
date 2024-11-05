@@ -49,6 +49,10 @@ jobs:
               }
           }
 
+          # Debugging: Print values to check what is being set
+          Write-Host "Setting version: $version"
+          Write-Host "Setting build: $build"
+
           # Construct the path correctly
           Remove-Item -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\$version" -Recurse -Force -ErrorAction Ignore
           New-Item -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\$version\xstore-components-update-Ug31.0_Ug31.0_Ins31.0_x752_20241028-095120.jar" -ItemType Directory -Force
@@ -79,12 +83,11 @@ jobs:
           echo "version=$version" >> $GITHUB_ENV
           echo "build=$build" >> $GITHUB_ENV
 
-        shell: powershell
-
       - name: Print Version and Build (next step)
         run: |
           echo "Version: ${{ env.version }}"
           echo "Build: ${{ env.build }}"
+
 
       - name: Copy Jar to Final Location
         run: |
