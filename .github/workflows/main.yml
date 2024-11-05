@@ -23,8 +23,6 @@ jobs:
       DFS_UPGRADES_DIRECTORY: "${{ github.workspace }}"
       NOTIFICATION_EMAIL_LIST: ""
       DFS_ONERETAIL: ""
-      build: ""
-      version: ""
 
     steps:
       - name: Clean workspace
@@ -75,18 +73,17 @@ jobs:
               Write-Error "Error ... Incorrect selection."
               exit 1
           }
-
-          # Set environment variables correctly
-          [System.Environment]::SetEnvironmentVariable('version', $version, [System.EnvironmentVariableTarget]::Process)
-          [System.Environment]::SetEnvironmentVariable('build', $build, [System.EnvironmentVariableTarget]::Process)
+          
+          echo "version=$version" >> $GITHUB_ENV
+          echo "build=$build" >> $GITHUB_ENV
         shell: powershell
 
       - name: Copy Jar to Final Location
         run: |
-          $upgraderJarFullPath = "${{ env.DFS_UPGRADES_DIRECTORY }}\\${{ env.version }}\\"
-          $sourceTargetFile = "$upgraderJarFullPath${{ env.build }}"
+          $upgraderJarFullPath = "${{ env.DFS_UPGRADES_DIRECTORY }}\\$env:version\\"
+          $sourceTargetFile = "$upgraderJarFullPath$env:build"
           $finalJarPath = "$upgraderJarFullPath\PRD_JAR"
-          $finalTargetFile = "$finalJarPath\\${{ env.build }}"
+          $finalTargetFile = "$finalJarPath\\$env:build"
 
           if (-not (Test-Path $finalJarPath)) {
               New-Item -ItemType Directory -Path $finalJarPath
@@ -99,43 +96,29 @@ jobs:
       - name: Generate Factory
         id: generate-factory
         run: |
-          Write-Host "${{ env.version }}"
-          Write-Host "${{ env.branch }}"
           $versionArr = '${{ env.version }}'.Split('.')
-          Write-Host "$versionArr[0]"
-          Write-Host "$versionArr[1]"
           $streamInput = 'X' + $versionArr[0] + "." + $versionArr[1]
           $preStr = "xstore-components-update-"
+          $xenvSubversion = ($env:build.Substring($preStr.Length)).Split("_")[0].Replace(".", "_")
+          $xstoreSubversion = ($env:build.Substring($preStr.Length)).Split("_")[1].Replace(".", "_")
+          $xservicesSubversion = ($env:build.Substring($preStr.Length)).Split("_")[2].Replace(".", "_")
+          $releaseVersion = "$xenvSubversion.$xstoreSubversion.$xservicesSubversion".ReplaceAll("[^\\d_.]", "")
 
-          $build = '${{ env.build }}'
-
-          if (-not [string]::IsNullOrEmpty($build) -and $build.Length -ge $preStr.Length) {
-              $buildSubstring = $build.Substring($preStr.Length)
-
-              $xenvSubversion = $buildSubstring.Split("_")[0].Replace(".", "_")
-              $xstoreSubversion = $buildSubstring.Split("_")[1].Replace(".", "_")
-              $xservicesSubversion = $buildSubstring.Split("_")[2].Replace(".", "_")
-              $releaseVersion = "$xenvSubversion.$xstoreSubversion.$xservicesSubversion" -replace '[^0-9_.]', ''
-
-              if (-not $xstoreSubversion.EndsWith('0')) {
-                  $xstoreSubversionArr = $xstoreSubversion.Split('_')
-                  $streamInput += "-" + $xstoreSubversionArr[0] -replace '[^0-9_.]', ''
-              }
-
-              $parentFolderRelease = "$streamInput_$releaseVersion"
-
-              # Trigger the build job
-              $buildJob = @{
-                  job = ''
-                  inputs = @{
-                      Environment = 'PRD_V18'
-                      Version = $parentFolderRelease
-                  }
-              }
-          } else {
-              Write-Error "Build variable is empty or too short."
-              exit 1
+          if (-not $xstoreSubversion.EndsWith('0')) {
+              $xstoreSubversionArr = $xstoreSubversion.Split('_')
+              $streamInput += "-" + $xstoreSubversionArr[0].ReplaceAll("[^\\d_.]", "")
           }
+
+          $parentFolderRelease = "$streamInput_$releaseVersion"
+
+          # Trigger the build job
+          #$buildJob = @{
+              #job = ''
+              #inputs = @{
+                  #Environment = 'PRD_V18'
+                  #Version = $parentFolderRelease
+              #}
+          #}
         shell: powershell
 
       - name: Send Upgrade Jar Release Notification
