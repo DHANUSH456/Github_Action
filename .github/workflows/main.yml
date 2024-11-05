@@ -97,12 +97,19 @@ jobs:
         id: generate-factory
         run: |
           $versionArr = '$env:version'.Split('.')
+          Write-Host "$versionArr[0]"
+          Write-Host "$versionArr[1]"
           $streamInput = 'X' + $versionArr[0] + "." + $versionArr[1]
+          Write-Host "$streamInput"
           $preStr = "xstore-components-update-"
           $xenvSubversion = ($env:build.Substring($preStr.Length)).Split("_")[0].Replace(".", "_")
+          Write-Host "$xenvSubversion"
           $xstoreSubversion = ($env:build.Substring($preStr.Length)).Split("_")[1].Replace(".", "_")
+          Write-Host "$xstoreSubversion"
           $xservicesSubversion = ($env:build.Substring($preStr.Length)).Split("_")[2].Replace(".", "_")
+          Write-Host "$xstoreSubversion"
           $releaseVersion = "$xenvSubversion.$xstoreSubversion.$xservicesSubversion".ReplaceAll("[^\\d_.]", "")
+          Write-Host "$xstoreSubversion"
 
           if (-not $xstoreSubversion.EndsWith('0')) {
               $xstoreSubversionArr = $xstoreSubversion.Split('_')
