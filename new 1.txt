@@ -119,3 +119,77 @@ jobs:
 
           # Sending email will require an external service or an integration
           # Here we can output the message to console or log as an alternative
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      - name: Choose Package
+        id: choose-package
+        run: |
+          $isPreconfigured = '${{ github.event.inputs.IS_PRECONFIGURED }}' -eq 'true'
+          $version = ''
+          $build = ''
+
+          if ($isPreconfigured) {
+              $version = '${{ github.event.inputs.BUILD_RELEASE }}'
+              $build = '${{ github.event.inputs.PACKAGE_NAME }}'
+          } else {
+              $relList = Get-ChildItem -Path ${{ env.DFS_UPGRADES_DIRECTORY }} | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
+              if ($relList.Count -gt 0) {
+                  $version = $relList[0]
+              } else {
+                  Write-Error "No releases found."
+                  exit 1
+              }
+          }
+
+          # Construct the path correctly
+          Remove-Item -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\$version" -Recurse -Force -ErrorAction Ignore
+          New-Item -Path "${{ env.DFS_UPGRADES_DIRECTORY }}\$version\xstore-components-update-Ug31.0_Ug31.0_Ins31.0_x752_20241028-095120.jar" -ItemType Directory -Force
+          $packagePath = "${{ env.DFS_UPGRADES_DIRECTORY }}\$version"
+          Write-Host "Checking package path: $packagePath"
+
+          if (-not (Test-Path $packagePath)) {
+              Write-Error "Package path does not exist: $packagePath"
+              exit 1
+          }
+
+          $pckgList = Get-ChildItem -Path $packagePath -Filter *.jar | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty Name
+          if (-not $pckgList) {
+              Write-Error "No package found in the specified directory."
+              exit 1
+          }
+
+          Write-Host "Version: $version"
+          Write-Host "Build: $build"
+
+          if (-not $build.EndsWith(".jar")) {
+              Write-Error "Error ... Incorrect selection."
+              exit 1
+          }
+          
+          echo "version=$version" >> $GITHUB_ENV
+          echo "build=$build" >> $GITHUB_ENV
+
+          Write-Host "$env:version"
+          Write-Host "${{ env.version }}"
+          Write-Host "$env:build"
+          Write-Host "${{ env.build }}"
+        shell: powershell
