@@ -84,11 +84,17 @@ jobs:
           # Set environment variables for future steps
           [System.Environment]::SetEnvironmentVariable('version', $version, [System.EnvironmentVariableTarget]::Process)
           [System.Environment]::SetEnvironmentVariable('build', $build, [System.EnvironmentVariableTarget]::Process)
+        shell: powershell
 
       - name: Print Version and Build (next step)
         run: |
-          echo "Version: ${{ env.version }}"
-          echo "Build: ${{ env.build }}"
+          Write-Host "Version: ${{ env.version }}"
+          Write-Host "Version: $env:version"
+          Write-Host "Version: $version"
+          Write-Host "Build: ${{ env.build }}"
+          Write-Host "Build: $env:build"
+          Write-Host "Build: $build"
+        shell: powershell
 
 
       - name: Copy Jar to Final Location
