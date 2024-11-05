@@ -82,6 +82,8 @@ jobs:
           }
 
           # Set environment variables for future steps
+          echo "VERSION=$version" >> $GITHUB_ENV
+          echo "BUILD=$build" >> $GITHUB_ENV
           [System.Environment]::SetEnvironmentVariable('VERSION', $version, [System.EnvironmentVariableTarget]::Process)
           [System.Environment]::SetEnvironmentVariable('BUILD', $build, [System.EnvironmentVariableTarget]::Process)
         shell: powershell
@@ -91,9 +93,15 @@ jobs:
           Write-Host "Version: ${{ env.VERSION }}"
           Write-Host "Version: $env:VERSION"
           Write-Host "Version: $VERSION"
+          Write-Host "Version: ${{ env.version }}"
+          Write-Host "Version: $env:version"
+          Write-Host "Version: $version"
           Write-Host "Build: ${{ env.BUILD }}"
           Write-Host "Build: $env:BUILD"
           Write-Host "Build: $BUILD"
+          Write-Host "Build: ${{ env.build }}"
+          Write-Host "Build: $env:build"
+          Write-Host "Build: $build"
         shell: powershell
 
 
