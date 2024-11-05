@@ -106,59 +106,57 @@ jobs:
           Copy-Item -Path $sourceTargetFile -Destination $finalTargetFile
         shell: powershell
 
-        - name: Generate Factory
-          id: generate-factory
-          run: |
-              # Split the version from the input
-              $versionArr = '${{ env.VERSION }}'.Split('.')
-              Write-Host "$($versionArr[0])"
-              Write-Host "$($versionArr[1])"
+      - name: Generate Factory
+        id: generate-factory
+        run: |
+            # Split the version from the input
+            $versionArr = '${{ env.VERSION }}'.Split('.')
+            Write-Host "$($versionArr[0])"
+            Write-Host "$($versionArr[1])"
 
-              # Construct stream input
-              $streamInput = "X$($versionArr[0]).$($versionArr[1])"
-              Write-Host "$streamInput"
-              
-              # Define the prefix to remove from the build string
-              $preStr = "xstore-components-update-"
-              
-              # Extract subversion parts from the BUILD string
-              $buildStr = '${{ env.BUILD }}'
+            # Construct stream input
+            $streamInput = "X$($versionArr[0]).$($versionArr[1])"
+            Write-Host "$streamInput"
+            
+            # Define the prefix to remove from the build string
+            $preStr = "xstore-components-update-"
+            
+            # Extract subversion parts from the BUILD string
+            $buildStr = '${{ env.BUILD }}'
 
-              # Ensure we correctly access and manipulate the BUILD string
-              $xenvSubversion = $buildStr.Substring($preStr.Length).Split("_")[0].Replace(".", "_")
-              Write-Host "$xenvSubversion"
+            # Ensure we correctly access and manipulate the BUILD string
+            $xenvSubversion = $buildStr.Substring($preStr.Length).Split("_")[0].Replace(".", "_")
+            Write-Host "$xenvSubversion"
 
-              $xstoreSubversion = $buildStr.Substring($preStr.Length).Split("_")[1].Replace(".", "_")
-              Write-Host "$xstoreSubversion"
+            $xstoreSubversion = $buildStr.Substring($preStr.Length).Split("_")[1].Replace(".", "_")
+            Write-Host "$xstoreSubversion"
 
-              $xservicesSubversion = $buildStr.Substring($preStr.Length).Split("_")[2].Replace(".", "_")
-              Write-Host "$xservicesSubversion"
+            $xservicesSubversion = $buildStr.Substring($preStr.Length).Split("_")[2].Replace(".", "_")
+            Write-Host "$xservicesSubversion"
 
-              # Correct use of the -replace operator instead of ReplaceAll
-              $releaseVersion = "$xenvSubversion.$xstoreSubversion.$xservicesSubversion" -replace "[^\d_.]", ""
-              Write-Host "$releaseVersion"
+            # Correct use of the -replace operator instead of ReplaceAll
+            $releaseVersion = "$xenvSubversion.$xstoreSubversion.$xservicesSubversion" -replace "[^\d_.]", ""
+            Write-Host "$releaseVersion"
 
-              # Append subversion to stream input if necessary
-              if (-not $xstoreSubversion.EndsWith('0')) {
-                  $xstoreSubversionArr = $xstoreSubversion.Split('_')
-                  $streamInput += "-$($xstoreSubversionArr[0])"
-              }
+            # Append subversion to stream input if necessary
+            if (-not $xstoreSubversion.EndsWith('0')) {
+                $xstoreSubversionArr = $xstoreSubversion.Split('_')
+                $streamInput += "-$($xstoreSubversionArr[0])"
+            }
 
-              # Create the final release folder name
-              $parentFolderRelease = "$streamInput`_$releaseVersion"
-              Write-Host "$parentFolderRelease"
+            # Create the final release folder name
+            $parentFolderRelease = "$streamInput`_$releaseVersion"
+            Write-Host "$parentFolderRelease"
 
-              # Trigger the build job
-              #$buildJob = @{
-              #  job = ''
-              #  inputs = @{
-              #    Environment = 'PRD_V18'
-              #    Version = $parentFolderRelease
-              #  }
-              #}
-          shell: powershell
-
-
+            # Trigger the build job
+            #$buildJob = @{
+            #  job = ''
+            #  inputs = @{
+            #    Environment = 'PRD_V18'
+            #    Version = $parentFolderRelease
+            #  }
+            #}
+        shell: powershell
 
       - name: Send Upgrade Jar Release Notification
         run: |
