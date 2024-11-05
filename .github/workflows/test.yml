@@ -1,11 +1,7 @@
 name: TEST
-  on:
+on:
   workflow_dispatch:
     inputs:
-      IS_PRECONFIGURED:
-        description: 'Is this a preconfigured build?'
-        required: false
-        default: 'true'
       BUILD_RELEASE:
         description: 'Release version if preconfigured'
         required: false
@@ -14,5 +10,34 @@ name: TEST
         description: 'Package name if preconfigured'
         required: false
         default: 'xstore-components-update-Ug31.0_Ug31.0_Ins31.0_x752_20241028-095120.jar'
-  jobs:
-  upgrade-jar-release:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    env:
+      VERSION: ""
+      BUILD: ""
+    
+    steps:
+      - name: Clean workspace
+        run: Remove-Item -Recurse -Force *.* -ErrorAction Ignore
+        shell: powershell
+
+      - name: Choose Package
+        id: choose-package
+        run: |
+          $version = "${{ github.event.inputs.BUILD_RELEASE }}"
+          $build = "${{ github.event.inputs.PACKAGE_NAME }}"
+
+          Write-Host "Setting version: $version"
+          Write-Host "Setting build: $build"
+          
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+          echo "BUILD=$build" >> $env:GITHUB_ENV
+        shell: powershell
+
+      - name: Print Version and Build (next step)
+        run: |
+          Write-Host "Version: $env:VERSION"
+          Write-Host "Build: $env:BUILD"
+        shell: powershell
