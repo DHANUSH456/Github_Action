@@ -23,8 +23,8 @@ jobs:
       DFS_UPGRADES_DIRECTORY: "${{ github.workspace }}"
       NOTIFICATION_EMAIL_LIST: ""
       DFS_ONERETAIL: ""
-      version: ""
-      build: ""
+      VERSION: ""
+      BUILD: ""
 
     steps:
       - name: Clean workspace
@@ -82,18 +82,18 @@ jobs:
           }
 
           # Set environment variables for future steps
-          [System.Environment]::SetEnvironmentVariable('version', $version, [System.EnvironmentVariableTarget]::Process)
-          [System.Environment]::SetEnvironmentVariable('build', $build, [System.EnvironmentVariableTarget]::Process)
+          [System.Environment]::SetEnvironmentVariable('VERSION', $version, [System.EnvironmentVariableTarget]::Process)
+          [System.Environment]::SetEnvironmentVariable('BUILD', $build, [System.EnvironmentVariableTarget]::Process)
         shell: powershell
 
       - name: Print Version and Build (next step)
         run: |
-          Write-Host "Version: ${{ env.version }}"
-          Write-Host "Version: $env:version"
-          Write-Host "Version: $version"
-          Write-Host "Build: ${{ env.build }}"
-          Write-Host "Build: $env:build"
-          Write-Host "Build: $build"
+          Write-Host "Version: ${{ env.VERSION }}"
+          Write-Host "Version: $env:VERSION"
+          Write-Host "Version: $VERSION"
+          Write-Host "Build: ${{ env.BUILD }}"
+          Write-Host "Build: $env:BUILD"
+          Write-Host "Build: $BUILD"
         shell: powershell
 
 
