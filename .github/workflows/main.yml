@@ -76,6 +76,11 @@ jobs:
           
           echo "version=$version" >> $GITHUB_ENV
           echo "build=$build" >> $GITHUB_ENV
+          
+          Write-Host "$env:version"
+          Write-Host "${{ env.version }}"
+          Write-Host "$env:build"
+          Write-Host "${{ env.build }}"
         shell: powershell
 
       - name: Copy Jar to Final Location
