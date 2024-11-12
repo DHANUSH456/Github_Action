@@ -70,6 +70,13 @@ jobs:
 
       - name: Generate Executable
         run: |
+          # Using the python path from actions/setup-python
+          $custom_python_path = "${{ runner.tool_cache }}\python\3.10.11\x64\python.exe"
+          Write-Host "Using Python executable at: $custom_python_path"
+          
+          # Create virtual environment using the custom Python path
+          & "$custom_python_path" -m venv $env:VIRTUAL_ENV_DIR
+          $env:VIRTUAL_ENV_EXE = "$env:VIRTUAL_ENV_DIR\Scripts"
           Write-Host "Generating executable..."
           & "$env:VIRTUAL_ENV_EXE\python.exe" --version
           & "$env:VIRTUAL_ENV_EXE\pyinstaller" --onefile -c --hidden-import $SCRIPT_DIRECTORY\version --hidden-import $SCRIPT_DIRECTORY\upgrade --hidden-import $SCRIPT_DIRECTORY\db --hidden-import $SCRIPT_DIRECTORY\utils --hidden-import $SCRIPT_DIRECTORY\config --hidden-import $SCRIPT_DIRECTORY\app --hidden-import $SCRIPT_DIRECTORY\backup --hidden-import $SCRIPT_DIRECTORY\pre_check --hidden-import $SCRIPT_DIRECTORY\w3b --hidden-import $SCRIPT_DIRECTORY\check --hidden-import $SCRIPT_DIRECTORY\UpdatePasswordPolicy --hidden-import $SCRIPT_DIRECTORY\XenvRunAtom --hidden-import $SCRIPT_DIRECTORY\win32timezone $SCRIPT_DIRECTORY\update.py
