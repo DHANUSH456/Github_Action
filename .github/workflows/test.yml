@@ -27,13 +27,14 @@ jobs:
       - name: Display Python Path
         run: |
           python --version
-          $path = $env:PATH.Split(';') | ForEach-Object { if (Test-Path "$_\python.exe") { $_ } }
-          echo "Python is installed at: $path"
+          echo "Python is installed at: $(where python)"
 
       - name: Install venv and Python dependencies
         run: |
           Write-Host "Creating python virtual env in folder $env:VIRTUAL_ENV_DIR..."
-          $custom_python_path = "${{ github.workspace }}\Python\Python$env:CUSTOM_PYTHON_VERSION\python.exe"
+          
+          # Using the python path from actions/setup-python
+          $custom_python_path = "${{ runner.tool_cache }}\python\3.10.11\x64\python.exe"
           Write-Host "Using Python executable at: $custom_python_path"
           
           # Create virtual environment using the custom Python path
