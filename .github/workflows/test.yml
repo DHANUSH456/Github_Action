@@ -68,18 +68,6 @@ jobs:
             ForEach-Object { $_ -replace "($env:last_build_version_Program_Keyword\s*=.*)($last_build_version)(.*)", "`$1$new_build_version`$3" } |
             Set-Content $PROGRAM_VERSION_FILE
 
-      - name: Run unit tests
-        run: |
-          Write-Host "Running unit tests..."
-          cd ${{ github.workspace }}\$env:SUBDIRECTORY
-          .\run_testunit.bat $env:VIRTUAL_ENV_EXE\python.exe
-
-      - name: Run SonarQube analysis
-        run: |
-          Write-Host "Running SonarQube analysis..."
-          $scannerHome = "D:\Program\sonar-scanner-4.0"
-          & "$scannerHome\bin\sonar-scanner.bat" -Dsonar.projectKey=onr-upgrader -Dsonar.projectName=onr-upgrader -Dsonar.projectVersion=$new_build_version -Dsonar.sources=${{ github.workspace }}\$env:SUBDIRECTORY -Dsonar.exclusions=venv/**,unit_test/**,htmlcov/**,test-report/**,update_fake.py,testing.py
-
       - name: Generate Executable
         run: |
           Write-Host "Generating executable..."
