@@ -1,43 +1,80 @@
-name: TEST
+name: LVM_GENERATE_UPDATE_EXE
 on:
-  workflow_dispatch:
-    inputs:
-      BUILD_RELEASE:
-        description: 'Release version if preconfigured'
-        required: false
-        default: '24.5.0'
-      PACKAGE_NAME:
-        description: 'Package name if preconfigured'
-        required: false
-        default: 'xstore-components-update-Ug31.0_Ug31.0_Ins31.0_x752_20241028-095120.jar'
 
 jobs:
-  test:
-    runs-on: windows-latest
+  GENERATE_UPDATE_EXE:
+    runs-on: lv-pool-windows
     env:
-      VERSION: ""
-      BUILD: ""
-    
+      SUBDIRECTORY: new_update
+      SCRIPT_DIRECTORY: ${{ github.workspace }}${{ env.SUBDIRECTORY }}\
+      PROGRAM_VERSION_FILENAME: version.py
+      PROGRAM_VERSION_FILE: ${{ env.SCRIPT_DIRECTORY }}${{ env.PROGRAM_VERSION_FILENAME }}
+      DFS_Path_Updater: \\d1\DfsLvm\Applications\Landesk\Applications\OneRetail\Upgrades\LVMXstoreUpgrades\updater
+      CUSTOM_PYTHON_VERSION: '310'
+      CUSTOM_PYTHON_PATH: D:\Program\Python\Python${{ env.CUSTOM_PYTHON_VERSION }}\python.exe
+      VIRTUAL_ENV_DIR: venvupgrader${{ env.CUSTOM_PYTHON_VERSION }}_master
+      VIRTUAL_ENV_EXE: ${{ github.workspace }}\${{ env.VIRTUAL_ENV_DIR }}\Scripts
+      IT_GroovyConfigFile: ${{ env.SCRIPT_DIRECTORY }}config.groovy
+      last_build_version: 336
+      last_build_version_Program_Keyword: last_build_version
+
     steps:
-      - name: Clean workspace
-        run: Remove-Item -Recurse -Force *.* -ErrorAction Ignore
-        shell: powershell
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Choose Package
-        id: choose-package
+      - name: Install venv and Python dependencies
         run: |
-          $version = "${{ github.event.inputs.BUILD_RELEASE }}"
-          $build = "${{ github.event.inputs.PACKAGE_NAME }}"
+          Write-Host "Creating python virtual env in folder $env:VIRTUAL_ENV_DIR..."
+          & $env:CUSTOM_PYTHON_PATH -m venv $env:VIRTUAL_ENV_DIR
+          & "$env:VIRTUAL_ENV_EXE\python.exe" -m pip install --upgrade pip
+          Write-Host "Installing python dependencies..."
+          & "$env:VIRTUAL_ENV_EXE\python.exe" -m pip install -r ${{ github.workspace }}\$env:SUBDIRECTORY\requirements.txt
 
-          Write-Host "Setting version: $version"
-          Write-Host "Setting build: $build"
+      - name: Increment version
+        run: |
+          Write-Host "Reading version file $env:PROGRAM_VERSION_FILE"
+          $lines = Get-Content $env:PROGRAM_VERSION_FILE
+          $last_build_version = 336
+          foreach ($line in $lines) {
+            if ($line.Contains($env:last_build_version_Program_Keyword)) {
+              $line = $line.Trim().Replace("'", "")
+              if ($line.Contains($env:last_build_version_Program_Keyword + '=')) {
+                $last_build_version = [int]$line.Split('=')[1]
+              }
+            }
+          }
+          $new_build_version = $last_build_version + 1
+          Write-Host "Increment script version from $last_build_version to $new_build_version in $env:PROGRAM_VERSION_FILE"
           
-          echo "VERSION=$version" >> $env:GITHUB_ENV
-          echo "BUILD=$build" >> $env:GITHUB_ENV
-        shell: powershell
+          (Get-Content $env:PROGRAM_VERSION_FILE) | 
+            ForEach-Object { $_ -replace "($env:last_build_version_Program_Keyword\s*=.*)($last_build_version)(.*)", "`$1$new_build_version`$3" } |
+            Set-Content $env:PROGRAM_VERSION_FILE
 
-      - name: Print Version and Build (next step)
+      - name: Run unit tests
         run: |
-          Write-Host "Version: $env:VERSION"
-          Write-Host "Build: $env:BUILD"
-        shell: powershell
+          Write-Host "Running unit tests..."
+          cd ${{ github.workspace }}\$env:SUBDIRECTORY
+          .\run_testunit.bat $env:VIRTUAL_ENV_EXE\python.exe
+
+      - name: Run SonarQube analysis
+        run: |
+          Write-Host "Running SonarQube analysis..."
+          $scannerHome = "D:\Program\sonar-scanner-4.0"
+          & "$scannerHome\bin\sonar-scanner.bat" -Dsonar.projectKey=onr-upgrader -Dsonar.projectName=onr-upgrader -Dsonar.projectVersion=$env:new_build_version -Dsonar.sources=${{ github.workspace }}\$env:SUBDIRECTORY -Dsonar.exclusions=venv/**,unit_test/**,htmlcov/**,test-report/**,update_fake.py,testing.py
+
+      - name: Generate Executable
+        run: |
+          Write-Host "Generating executable..."
+          & "$env:VIRTUAL_ENV_EXE\python.exe" --version
+          & "$env:VIRTUAL_ENV_EXE\pyinstaller" --onefile -c --hidden-import $env:SCRIPT_DIRECTORY\version --hidden-import $env:SCRIPT_DIRECTORY\upgrade --hidden-import $env:SCRIPT_DIRECTORY\db --hidden-import $env:SCRIPT_DIRECTORY\utils --hidden-import $env:SCRIPT_DIRECTORY\config --hidden-import $env:SCRIPT_DIRECTORY\app --hidden-import $env:SCRIPT_DIRECTORY\backup --hidden-import $env:SCRIPT_DIRECTORY\pre_check --hidden-import $env:SCRIPT_DIRECTORY\w3b --hidden-import $env:SCRIPT_DIRECTORY\check --hidden-import $env:SCRIPT_DIRECTORY\UpdatePasswordPolicy --hidden-import $env:SCRIPT_DIRECTORY\XenvRunAtom --hidden-import $env:SCRIPT_DIRECTORY\win32timezone $env:SCRIPT_DIRECTORY\update.py
+
+      - name: Commit and Tag version
+        run: |
+          git add ${{ github.workspace }}\$env:SUBDIRECTORY\$env:PROGRAM_VERSION_FILENAME
+          git commit -m "Commit from GitHub Actions"
+          git push origin master
+          git tag -a "$env:new_build_version" -m "$env:new_build_version"
+          git push origin refs/tags/$env:new_build_version
+
+      - name: Publish Executable
+        run: Copy-Item "${{ github.workspace }}\dist\update.exe" -Destination "$env:SHARED_DIRECTORY\update-$env:new_build_version.exe"
