@@ -1,6 +1,7 @@
 name: LVM_GENERATE_UPDATE_EXE
 on:
-
+  workflow_dispatch:
+  
 jobs:
   GENERATE_UPDATE_EXE:
     runs-on: lv-pool-windows
