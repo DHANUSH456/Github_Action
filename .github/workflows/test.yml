@@ -8,7 +8,7 @@ jobs:
     env:
       SUBDIRECTORY: new_update
       PROGRAM_VERSION_FILENAME: version.py
-      DFS_Path_Updater: \\d1\DfsLvm\Applications\Landesk\Applications\OneRetail\tmp\CMDB_Testing
+      DFS_Path_Updater: ${{ github.workspace }}\Testing
       CUSTOM_PYTHON_VERSION: '310'
       VIRTUAL_ENV_DIR: venvupgrader310_master
       IT_GroovyConfigFile: config.groovy
