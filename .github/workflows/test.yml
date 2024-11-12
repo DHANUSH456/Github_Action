@@ -10,7 +10,6 @@ jobs:
       PROGRAM_VERSION_FILENAME: version.py
       DFS_Path_Updater: \\d1\DfsLvm\Applications\Landesk\Applications\OneRetail\tmp\CMDB_Testing
       CUSTOM_PYTHON_VERSION: '310'
-      CUSTOM_PYTHON_PATH: ${{ github.workspace }}\Python\Python${{ env.CUSTOM_PYTHON_VERSION }}\python.exe
       VIRTUAL_ENV_DIR: venvupgrader310_master
       IT_GroovyConfigFile: config.groovy
       last_build_version: 336
