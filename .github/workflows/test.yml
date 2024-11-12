@@ -1,7 +1,7 @@
 name: LVM_GENERATE_UPDATE_EXE
 on:
   workflow_dispatch:
-  
+
 jobs:
   GENERATE_UPDATE_EXE:
     runs-on: lv-pool-windows
@@ -10,7 +10,7 @@ jobs:
       SCRIPT_DIRECTORY: ${{ github.workspace }}${{ env.SUBDIRECTORY }}\
       PROGRAM_VERSION_FILENAME: version.py
       PROGRAM_VERSION_FILE: ${{ env.SCRIPT_DIRECTORY }}${{ env.PROGRAM_VERSION_FILENAME }}
-      DFS_Path_Updater: \\d1\DfsLvm\Applications\Landesk\Applications\OneRetail\Upgrades\LVMXstoreUpgrades\updater
+      DFS_Path_Updater: \\d1\DfsLvm\Applications\Landesk\Applications\OneRetail\tmp\CMDB_Testing
       CUSTOM_PYTHON_VERSION: '310'
       CUSTOM_PYTHON_PATH: D:\Program\Python\Python${{ env.CUSTOM_PYTHON_VERSION }}\python.exe
       VIRTUAL_ENV_DIR: venvupgrader${{ env.CUSTOM_PYTHON_VERSION }}_master
