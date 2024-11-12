@@ -9,6 +9,7 @@ jobs:
       SUBDIRECTORY: new_update
       PROGRAM_VERSION_FILENAME: version.py
       DFS_Path_Updater: \\d1\DfsLvm\Applications\Landesk\Applications\OneRetail\tmp\CMDB_Testing
+      CUSTOM_PYTHON_PATH: ${{ github.workspace }}\Python\Python${{ env.CUSTOM_PYTHON_VERSION }}\python.exe
       CUSTOM_PYTHON_VERSION: '310'
       VIRTUAL_ENV_DIR: venvupgrader310_master
       IT_GroovyConfigFile: config.groovy
@@ -18,6 +19,17 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+       - name: Display Python Path
+        run: |
+          python --version
+          which python
+          echo "Python is installed at: $(which python)"
 
       - name: Install venv and Python dependencies
         run: |
