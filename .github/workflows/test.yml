@@ -33,7 +33,14 @@ jobs:
       - name: Install venv and Python dependencies
         run: |
           Write-Host "Creating python virtual env in folder $env:VIRTUAL_ENV_DIR..."
-          & $env:CUSTOM_PYTHON_PATH -m venv $env:VIRTUAL_ENV_DIR
+          $custom_python_path = "${{ github.workspace }}\Python\Python$env:CUSTOM_PYTHON_VERSION\python.exe"
+          Write-Host "Using Python executable at: $custom_python_path"
+          
+          # Create virtual environment using the custom Python path
+          & "$custom_python_path" -m venv $env:VIRTUAL_ENV_DIR
+          
+          # Install pip and dependencies
+          $env:VIRTUAL_ENV_EXE = "$env:VIRTUAL_ENV_DIR\Scripts"
           & "$env:VIRTUAL_ENV_EXE\python.exe" -m pip install --upgrade pip
           Write-Host "Installing python dependencies..."
           & "$env:VIRTUAL_ENV_EXE\python.exe" -m pip install -r ${{ github.workspace }}\$env:SUBDIRECTORY\requirements.txt
