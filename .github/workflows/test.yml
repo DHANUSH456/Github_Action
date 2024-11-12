@@ -27,7 +27,7 @@ jobs:
       - name: Display Python Path
         run: |
           python --version
-          $path = $env:PATH.Split(';') | ForEach-Object { if (Test-Path "$_\java.exe") { $_ } }
+          $path = $env:PATH.Split(';') | ForEach-Object { if (Test-Path "$_\python.exe") { $_ } }
           echo "Python is installed at: $path"
 
       - name: Install venv and Python dependencies
