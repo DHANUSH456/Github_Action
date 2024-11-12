@@ -4,18 +4,14 @@ on:
 
 jobs:
   GENERATE_UPDATE_EXE:
-    runs-on: lv-pool-windows
+    runs-on: windows-latest
     env:
       SUBDIRECTORY: new_update
-      SCRIPT_DIRECTORY: ${{ github.workspace }}${{ env.SUBDIRECTORY }}\
       PROGRAM_VERSION_FILENAME: version.py
-      PROGRAM_VERSION_FILE: ${{ env.SCRIPT_DIRECTORY }}${{ env.PROGRAM_VERSION_FILENAME }}
       DFS_Path_Updater: \\d1\DfsLvm\Applications\Landesk\Applications\OneRetail\tmp\CMDB_Testing
       CUSTOM_PYTHON_VERSION: '310'
-      CUSTOM_PYTHON_PATH: D:\Program\Python\Python${{ env.CUSTOM_PYTHON_VERSION }}\python.exe
-      VIRTUAL_ENV_DIR: venvupgrader${{ env.CUSTOM_PYTHON_VERSION }}_master
-      VIRTUAL_ENV_EXE: ${{ github.workspace }}\${{ env.VIRTUAL_ENV_DIR }}\Scripts
-      IT_GroovyConfigFile: ${{ env.SCRIPT_DIRECTORY }}config.groovy
+      VIRTUAL_ENV_DIR: venvupgrader310_master
+      IT_GroovyConfigFile: config.groovy
       last_build_version: 336
       last_build_version_Program_Keyword: last_build_version
 
@@ -33,9 +29,11 @@ jobs:
 
       - name: Increment version
         run: |
-          Write-Host "Reading version file $env:PROGRAM_VERSION_FILE"
-          $lines = Get-Content $env:PROGRAM_VERSION_FILE
-          $last_build_version = 336
+          $SCRIPT_DIRECTORY = "${{ github.workspace }}\$env:SUBDIRECTORY"
+          $PROGRAM_VERSION_FILE = "$SCRIPT_DIRECTORY\$env:PROGRAM_VERSION_FILENAME"
+          Write-Host "Reading version file $PROGRAM_VERSION_FILE"
+          $lines = Get-Content $PROGRAM_VERSION_FILE
+          $last_build_version = $env:last_build_version
           foreach ($line in $lines) {
             if ($line.Contains($env:last_build_version_Program_Keyword)) {
               $line = $line.Trim().Replace("'", "")
@@ -45,11 +43,11 @@ jobs:
             }
           }
           $new_build_version = $last_build_version + 1
-          Write-Host "Increment script version from $last_build_version to $new_build_version in $env:PROGRAM_VERSION_FILE"
+          Write-Host "Increment script version from $last_build_version to $new_build_version in $PROGRAM_VERSION_FILE"
           
-          (Get-Content $env:PROGRAM_VERSION_FILE) | 
+          (Get-Content $PROGRAM_VERSION_FILE) | 
             ForEach-Object { $_ -replace "($env:last_build_version_Program_Keyword\s*=.*)($last_build_version)(.*)", "`$1$new_build_version`$3" } |
-            Set-Content $env:PROGRAM_VERSION_FILE
+            Set-Content $PROGRAM_VERSION_FILE
 
       - name: Run unit tests
         run: |
@@ -61,21 +59,21 @@ jobs:
         run: |
           Write-Host "Running SonarQube analysis..."
           $scannerHome = "D:\Program\sonar-scanner-4.0"
-          & "$scannerHome\bin\sonar-scanner.bat" -Dsonar.projectKey=onr-upgrader -Dsonar.projectName=onr-upgrader -Dsonar.projectVersion=$env:new_build_version -Dsonar.sources=${{ github.workspace }}\$env:SUBDIRECTORY -Dsonar.exclusions=venv/**,unit_test/**,htmlcov/**,test-report/**,update_fake.py,testing.py
+          & "$scannerHome\bin\sonar-scanner.bat" -Dsonar.projectKey=onr-upgrader -Dsonar.projectName=onr-upgrader -Dsonar.projectVersion=$new_build_version -Dsonar.sources=${{ github.workspace }}\$env:SUBDIRECTORY -Dsonar.exclusions=venv/**,unit_test/**,htmlcov/**,test-report/**,update_fake.py,testing.py
 
       - name: Generate Executable
         run: |
           Write-Host "Generating executable..."
           & "$env:VIRTUAL_ENV_EXE\python.exe" --version
-          & "$env:VIRTUAL_ENV_EXE\pyinstaller" --onefile -c --hidden-import $env:SCRIPT_DIRECTORY\version --hidden-import $env:SCRIPT_DIRECTORY\upgrade --hidden-import $env:SCRIPT_DIRECTORY\db --hidden-import $env:SCRIPT_DIRECTORY\utils --hidden-import $env:SCRIPT_DIRECTORY\config --hidden-import $env:SCRIPT_DIRECTORY\app --hidden-import $env:SCRIPT_DIRECTORY\backup --hidden-import $env:SCRIPT_DIRECTORY\pre_check --hidden-import $env:SCRIPT_DIRECTORY\w3b --hidden-import $env:SCRIPT_DIRECTORY\check --hidden-import $env:SCRIPT_DIRECTORY\UpdatePasswordPolicy --hidden-import $env:SCRIPT_DIRECTORY\XenvRunAtom --hidden-import $env:SCRIPT_DIRECTORY\win32timezone $env:SCRIPT_DIRECTORY\update.py
+          & "$env:VIRTUAL_ENV_EXE\pyinstaller" --onefile -c --hidden-import $SCRIPT_DIRECTORY\version --hidden-import $SCRIPT_DIRECTORY\upgrade --hidden-import $SCRIPT_DIRECTORY\db --hidden-import $SCRIPT_DIRECTORY\utils --hidden-import $SCRIPT_DIRECTORY\config --hidden-import $SCRIPT_DIRECTORY\app --hidden-import $SCRIPT_DIRECTORY\backup --hidden-import $SCRIPT_DIRECTORY\pre_check --hidden-import $SCRIPT_DIRECTORY\w3b --hidden-import $SCRIPT_DIRECTORY\check --hidden-import $SCRIPT_DIRECTORY\UpdatePasswordPolicy --hidden-import $SCRIPT_DIRECTORY\XenvRunAtom --hidden-import $SCRIPT_DIRECTORY\win32timezone $SCRIPT_DIRECTORY\update.py
 
       - name: Commit and Tag version
         run: |
           git add ${{ github.workspace }}\$env:SUBDIRECTORY\$env:PROGRAM_VERSION_FILENAME
           git commit -m "Commit from GitHub Actions"
           git push origin master
-          git tag -a "$env:new_build_version" -m "$env:new_build_version"
-          git push origin refs/tags/$env:new_build_version
+          git tag -a "$new_build_version" -m "$new_build_version"
+          git push origin refs/tags/$new_build_version
 
       - name: Publish Executable
-        run: Copy-Item "${{ github.workspace }}\dist\update.exe" -Destination "$env:SHARED_DIRECTORY\update-$env:new_build_version.exe"
+        run: Copy-Item "${{ github.workspace }}\dist\update.exe" -Destination "$env:SHARED_DIRECTORY\update-$new_build_version.exe"
