@@ -47,11 +47,11 @@ jobs:
 
     - name: Print User Input Parameters
       run: |
-        Write-Host $env:base_branch_version
-        Write-Host $env:new_branch_version
-        Write-Host $env:new_cust_version
-        Write-Host $env:is_minor_branch
-        Write-Host $env:last_tag
+        echo "$env:base_branch_version"
+        echo "$env:new_branch_version"
+        echo "$env:new_cust_version"
+        echo "$env:is_minor_branch"
+        echo "$env:last_tag"
 
     - name: Validate User Input
       run: |
