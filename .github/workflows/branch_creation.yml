@@ -47,11 +47,11 @@ jobs:
 
     - name: Print User Input Parameters
       run: |
-        Write-Host "Base Branch Version: ${{env.base_branch_version}}"
-        Write-Host "New Branch Version: ${{env.new_branch_version}}"
-        Write-Host "New Customer Version: ${{env.new_cust_version}}"
-        Write-Host "Is Minor Branch: ${{env.is_minor_branch}}"
-        Write-Host "Last Tag: ${{env.last_tag}}"
+        Write-Host "Base Branch Version: $env:base_branch_version"
+        Write-Host "New Branch Version: $env:new_branch_version"
+        Write-Host "New Customer Version: $env:new_cust_version"
+        Write-Host "Is Minor Branch: $env:is_minor_branch"
+        Write-Host "Last Tag: $env:last_tag"
 
     - name: Validate User Input
       run: |
