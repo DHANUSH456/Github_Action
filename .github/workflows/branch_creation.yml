@@ -4,25 +4,20 @@ on:
   workflow_dispatch:
     inputs:
       base_branch_version:
-        description: 'Base branch version'
-        required: true
+        description: 'Base branch version, e.g. X22.1 or tag name release_X22.1_22.1.0-12.0'
         default: 'X25.1'
       new_branch_version:
-        description: 'New branch version'
-        required: true
-        default: 'X25.4'
+        description: 'New Xstore branch version, e.g. X22.2 or X22.2-17'
+        default: 'X25.2'
       new_cust_version:
-        description: 'New customer version'
-        required: true
+        description: 'New customer version, e.g. for X22.2 or X22.2-17 give as 22.2.0'
         default: '25.2.0'
       is_minor_branch:
-        description: 'Is this a minor branch'
-        required: true
+        description: 'Some choice parameter'
         default: 'false'
       last_tag:
-        description: 'Last tag after which new branch will be cut'
-        required: false
-        default: 'None'
+        description: 'Last tag after which new branch will be cut, e.g. release_X22.1_22.1.0-12.0'
+        default: ''
 
 jobs:
   branch_creation:
@@ -43,7 +38,6 @@ jobs:
       run: Remove-Item -Recurse -Force *.* -ErrorAction Ignore
 
     - name: User Input Parameters
-      id: input
       run: |
         echo "base_branch_version=${{ github.event.inputs.base_branch_version }}" >> $GITHUB_ENV
         echo "new_branch_version=${{ github.event.inputs.new_branch_version }}" >> $GITHUB_ENV
@@ -51,8 +45,15 @@ jobs:
         echo "is_minor_branch=${{ github.event.inputs.is_minor_branch }}" >> $GITHUB_ENV
         echo "last_tag=${{ github.event.inputs.last_tag }}" >> $GITHUB_ENV
 
+    - name: Print User Input Parameters
+      run: |
+        Write-Host $env:base_branch_version
+        Write-Host $env:new_branch_version
+        Write-Host $env:new_cust_version
+        Write-Host $env:is_minor_branch
+        Write-Host $env:last_tag
+
     - name: Validate User Input
-      id: validate_input
       run: |
         echo "skipStage=false"
         if ($env:is_minor_branch -eq "true") {
@@ -62,8 +63,6 @@ jobs:
 
     - name: Check if Branch Exists
       run: |
-        Write-Host "$env:REPOSITORY_XSTORE"
-        Write-Host "$env:new_branch_version"
         $branchExists = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern "refs/heads/$env:new_branch_version"
         if ($branchExists) {
             Write-Host "Branch exists, skipping branch creation"
@@ -74,7 +73,7 @@ jobs:
     - name: Create Xstore Branch
       if: ${{ env.skipStage != 'true' }}
       run: |
-        git clone "${{ env.REPOSITORY_XSTORE }}" ${{ github.workspace }}
+        git clone "${{ env.REPOSITORY_XSTORE }}" "${{ github.workspace }}"
         cd "${{ env.REPOSITORY_XSTORE }}"
         git checkout -b "${{ env.new_branch_version }}" "${{ env.base_branch_version }}"
         powershell.exe -File "${{ github.workspace }}/modify_for_new_branch.ps1" -workspacePath "${{ github.workspace }}" -branchHead "${{ env.base_branch_version }}" -branchMatcher "${{ env.new_branch_version }}" -newCustomerVersion "${{ env.new_cust_version }}" -isMinorBranch "${{ env.is_minor_branch }}"
