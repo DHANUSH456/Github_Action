@@ -6,15 +6,15 @@ on:
       base_branch_version:
         description: 'Base branch version'
         required: true
-        default: 'None'
+        default: 'X25.1'
       new_branch_version:
         description: 'New branch version'
         required: true
-        default: 'None'
+        default: 'X25.2'
       new_cust_version:
         description: 'New customer version'
         required: true
-        default: 'None'
+        default: ''
       is_minor_branch:
         description: 'Is this a minor branch'
         required: true
