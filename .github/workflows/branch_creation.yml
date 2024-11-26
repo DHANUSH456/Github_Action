@@ -49,11 +49,13 @@ jobs:
         echo "last_tag=${{ github.event.inputs.last_tag }}" >> $GITHUB_ENV
 
     - name: Validate User Input
+      id: validate_input
       run: |
         echo "skipStage=false"
-        if [[ "${{ env.is_minor_branch }}" == "true" ]]; then
+        if ($env:is_minor_branch -eq "true") {
           echo "skipStage=true"
-        fi
+        }
+        echo "skipStage=$skipStage" >> $GITHUB_ENV
 
     - name: Check if Branch Exists
       run: |
@@ -64,7 +66,7 @@ jobs:
         fi
 
     - name: Create Xstore Branch
-      if: steps.input.outputs.skipStage != 'true'
+      if: ${{ env.skipStage != 'true' }}
       run: |
         git clone "${{ env.REPOSITORY_XSTORE }}"
         cd "${{ env.REPOSITORY_XSTORE }}"
@@ -81,26 +83,26 @@ jobs:
         git push origin "${{ env.new_branch_version }}_artifacts"
 
     - name: Create MNT Branches
-      if: steps.input.outputs.skipStage != 'true'
+      if: ${{ env.skipStage != 'true' }}
       run: |
         for mnt_env in "BCI" "PT2" "UAT" "PRP" "PRD"; do
           powershell.exe -File "${{ github.workspace }}/setup_new_branch.ps1" -workspacePath "${{ github.workspace }}" -branchMatcher "${{ env.new_branch_version }}" -branchHead "${{ env.base_branch_version }}" -mntBranchEnv $mnt_env
         done
 
     - name: Modify Head MNT Branch for Downstream Merge
-      if: steps.input.outputs.skipStage != 'true'
+      if: ${{ env.skipStage != 'true' }}
       run: |
         powershell.exe -File "${{ github.workspace }}/modify_head_branch.ps1" -workspacePath "${{ github.workspace }}" -branchMatcher "${{ env.new_branch_version }}" -branchHead "${{ env.base_branch_version }}"
 
     - name: CMDB - BitBucket Changes
-      if: steps.input.outputs.skipStage != 'true'
+      if: ${{ env.skipStage != 'true' }}
       run: |
         for cmdb_env in "PT2" "UAT"; do
           powershell.exe -File "${{ github.workspace }}/CMDB_New_Xstore_Branch_Setup.ps1" -workspacePath "${{ github.workspace }}" -branchMatcher "${{ env.new_branch_version }}" -branchHead "${{ env.base_branch_version }}" -cmdbEnv $cmdb_env
         done
 
     - name: CMDB - UI Changes
-      if: steps.input.outputs.skipStage != 'true'
+      if: ${{ env.skipStage != 'true' }}
       run: |
         $prdhost = "oneretail-cmdb.vuitton.net:8443"
         Invoke-WebRequest -Uri "https://$prdhost/API/Cmdb/CmdbVersion?version=${{ env.new_branch_version }}&referenceVersion=${{ env.base_branch_version }}" -Method Put -UseDefaultCredentials
