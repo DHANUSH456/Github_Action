@@ -1,0 +1,130 @@
+name: LVM_XSTORE_BRANCH_CREATION
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: windows-latest
+
+    env:
+      REPOSITORY_XSTORE: 
+      REPOSITORY_MNT: 
+      REPOSITORY_MNT_PRD: 
+      REPOSITORY_CMDB_PT2: 
+      REPOSITORY_CMDB_UAT: 
+      REPOSITORY_ARTIFACTS: 
+      BRANCH_NAME: "X22.3"
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Clean workspace
+        run: Remove-Item -Recurse -Force *.* -ErrorAction Ignore
+
+      - name: Set up user input
+        id: setup_input
+        run: |
+          $is_preconfigured = ${{ github.event.inputs.IS_PRECONFIGURED }}
+          if ($is_preconfigured -eq "true") {
+            $base_branch_version = "${{ github.event.inputs.BASE_BRANCH_VERSION }}"
+            $new_branch_version = "${{ github.event.inputs.NEW_BRANCH_VERSION }}"
+            $is_minor_branch = "${{ github.event.inputs.IS_MINOR_BRANCH }}"
+          } else {
+            $base_branch_version = "None"
+            $new_branch_version = "None"
+            $is_minor_branch = "false"
+          }
+          echo "::set-output name=base_branch_version::$base_branch_version"
+          echo "::set-output name=new_branch_version::$new_branch_version"
+          echo "::set-output name=is_minor_branch::$is_minor_branch"
+
+      - name: Validate User Input
+        run: |
+          Write-Host "skipStage value is --${{ steps.setup_input.outputs.is_minor_branch }}--"
+          if ("${{ steps.setup_input.outputs.is_minor_branch }}" -eq "true") {
+            Write-Host "is_minor_branch :: true"
+            set-output name=skipStage "true"
+          } else {
+            set-output name=skipStage "false"
+          }
+
+      - name: Check if branch exists in XStore
+        id: check_branch_exists
+        run: |
+          $branchMatcher = "${{ steps.setup_input.outputs.new_branch_version }}"
+          $branches = git ls-remote --heads ${{ secrets.REPOSITORY_XSTORE }} | Select-String -Pattern $branchMatcher
+          if ($branches) {
+            echo "Branch found"
+            exit 1
+          } else {
+            echo "Branch not found"
+          }
+
+      # Step 6: Create XStore branch
+      - name: Create XStore Branch
+        if: ${{ steps.check_branch_exists.outcome == 'failure' }}
+        run: |
+          $branchHead = "${{ steps.setup_input.outputs.base_branch_version }}"
+          $branchMatcher = "${{ steps.setup_input.outputs.new_branch_version }}"
+          git clone ${{ secrets.REPOSITORY_XSTORE }} -b $branchHead
+          cd XStoreRepo
+          git checkout -b $branchMatcher
+          git config --global user.name "${{ env.COMMIT_USER }}"
+          git config --global user.email "${{ env.COMMIT_USER_EMAIL }}"
+          # Powershell script to modify branch
+          powershell.exe -ExecutionPolicy Bypass -File ./Modify_for_New_Branch.ps1 -workspacePath ${{ github.workspace }} -branchHead $branchHead -branchMatcher $branchMatcher
+          git add .
+          git commit -m "Commit from GitHub Actions"
+          git push -u origin $branchMatcher
+
+      # Step 7: Create Artifact Branch
+      - name: Create Artifact Branch
+        if: ${{ steps.check_branch_exists.outcome == 'failure' }}
+        run: |
+          $branchHead = "${{ steps.setup_input.outputs.base_branch_version }}"
+          $branchMatcher = "${{ steps.setup_input.outputs.new_branch_version }}"
+          $branchHeadArtifacts = "18.0.3.0.75_" + $branchHead
+          $branchMatcherArtifacts = "18.0.3.0.75_" + $branchMatcher
+          git clone ${{ secrets.REPOSITORY_ARTIFACTS }} -b $branchHeadArtifacts
+          cd ArtifactRepo
+          git checkout -b $branchMatcherArtifacts
+          git config --global user.name "${{ env.COMMIT_USER }}"
+          git config --global user.email "${{ env.COMMIT_USER_EMAIL }}"
+          git push origin $branchMatcherArtifacts
+
+      # Step 8: Create MNT Branches
+      - name: Create MNT Branches
+        if: ${{ steps.setup_input.outputs.skipStage == 'false' }}
+        run: |
+          $mntBranchEnvList = @("BCI", "PT2", "UAT", "PRP", "PRD")
+          foreach ($mntBranchEnv in $mntBranchEnvList) {
+            Start-MNTBranchSetup -mntBranchEnv $mntBranchEnv -branchMatcher $branchMatcher -branchHead $branchHead
+          }
+          Write-Host "Applying bitbucket permissions for mnt"
+          # Permissions for MNT branches
+          # Start a job for altering permissions (similar to Jenkins)
+          # build-xstore-setup job call can be done here in the same way.
+
+      # Step 9: Modify Head MNT Branch for downstream merge
+      - name: Modify Head MNT Branch for downstream merge
+        if: ${{ steps.setup_input.outputs.skipStage == 'false' }}
+        run: |
+          Start-HeadMNTBranchModification -branchHead $branchHead -branchMatcher $branchMatcher
+
+      # Step 10: CMDB - BitBucket changes
+      - name: CMDB BitBucket Changes
+        if: ${{ steps.setup_input.outputs.skipStage == 'false' }}
+        run: |
+          $cmdbEnvList = @("PT2", "UAT")
+          foreach ($cmdbEnv in $cmdbEnvList) {
+            Add-FilesInCMDB -cmdbEnv $cmdbEnv -branchMatcher $branchMatcher -branchHead $branchHead
+          }
+
+      # Step 11: CMDB - UI changes
+      - name: CMDB UI Changes
+        if: ${{ steps.setup_input.outputs.skipStage == 'false' }}
+        run: |
+          $prdhost = "oneretail-cmdb.vuitton.net:8443"
+          Invoke-WebRequest -Uri "https://$prdhost/API/Cmdb/CmdbVersion?version=$branchMatcher&referenceVersion=$branchHead" -Method Put
