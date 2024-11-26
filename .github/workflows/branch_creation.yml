@@ -45,14 +45,6 @@ jobs:
         echo "is_minor_branch=${{ github.event.inputs.is_minor_branch }}" >> $GITHUB_ENV
         echo "last_tag=${{ github.event.inputs.last_tag }}" >> $GITHUB_ENV
 
-    - name: Print User Input Parameters
-      run: |
-        Write-Host "Base Branch Version: $env:base_branch_version"
-        Write-Host "New Branch Version: $env:new_branch_version"
-        Write-Host "New Customer Version: $env:new_cust_version"
-        Write-Host "Is Minor Branch: $env:is_minor_branch"
-        Write-Host "Last Tag: $env:last_tag"
-
     - name: Validate User Input
       run: |
         echo "skipStage=false"
@@ -63,7 +55,8 @@ jobs:
 
     - name: Check if Branch Exists
       run: |
-        $branchExists = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern "refs/heads/$env:new_branch_version"
+        $remoteBranches = git ls-remote --heads $env:REPOSITORY_XSTORE
+        $branchExists = $remoteBranches | Select-String -Pattern "refs/heads/$env:new_branch_version"
         if ($branchExists) {
             Write-Host "Branch exists, skipping branch creation"
         } else {
