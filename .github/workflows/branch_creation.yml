@@ -64,7 +64,6 @@ jobs:
         $branchExists = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern "refs/heads/$env:new_branch_version"
         if ($branchExists) {
             Write-Host "Branch exists, skipping branch creation"
-            exit 1
         } else {
             Write-Host "Branch does not exist, proceeding with creation"
         }
