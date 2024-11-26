@@ -59,11 +59,11 @@ jobs:
 
     - name: Check if Branch Exists
       run: |
-      $branchExists = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern "refs/heads/$env:new_branch_version"
-      if ($branchExists) {
+        $branchExists = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern "refs/heads/$env:new_branch_version"
+        if ($branchExists) {
           Write-Host "Branch exists, skipping branch creation"
           exit 1
-      }
+        }
 
     - name: Create Xstore Branch
       if: ${{ env.skipStage != 'true' }}
