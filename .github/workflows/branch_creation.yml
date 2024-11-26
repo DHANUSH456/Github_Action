@@ -10,7 +10,7 @@ on:
       new_branch_version:
         description: 'New branch version'
         required: true
-        default: 'X25.2'
+        default: 'X25.4'
       new_cust_version:
         description: 'New customer version'
         required: true
@@ -38,6 +38,9 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
+
+    - name: Clean workspace
+      run: Remove-Item -Recurse -Force *.* -ErrorAction Ignore
 
     - name: User Input Parameters
       id: input
