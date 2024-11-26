@@ -14,7 +14,7 @@ on:
       new_cust_version:
         description: 'New customer version'
         required: true
-        default: ''
+        default: '25.2.0'
       is_minor_branch:
         description: 'Is this a minor branch'
         required: true
@@ -60,7 +60,7 @@ jobs:
     - name: Check if Branch Exists
       run: |
         Write-Host "$env:REPOSITORY_XSTORE"
-        Write-Hots "$env:new_branch_version"
+        Write-Host "$env:new_branch_version"
         $branchExists = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern "refs/heads/$env:new_branch_version"
         if ($branchExists) {
             Write-Host "Branch exists, skipping branch creation"
