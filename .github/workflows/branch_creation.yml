@@ -5,13 +5,13 @@ on:
     inputs:
       base_branch_version:
         description: 'Base branch version, e.g. X22.1 or tag name release_X22.1_22.1.0-12.0'
-        default: 'X25.1'
+        default: 'main'
       new_branch_version:
         description: 'New Xstore branch version, e.g. X22.2 or X22.2-17'
-        default: 'X25.2'
+        default: 'X25.1'
       new_cust_version:
         description: 'New customer version, e.g. for X22.2 or X22.2-17 give as 22.2.0'
-        default: '25.2.0'
+        default: '25.1.0'
       is_minor_branch:
         description: 'Some choice parameter'
         default: 'false'
@@ -55,20 +55,16 @@ jobs:
 
     - name: Check if Branch Exists
       run: |
-        $remoteBranches = git ls-remote --heads $env:REPOSITORY_XSTORE
-        $branchExists = $remoteBranches | Select-String -Pattern "refs/heads/$env:new_branch_version"
+        $branchExists = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern "refs/heads/$env:new_branch_version"
         if ($branchExists) {
             Write-Host "Branch exists, skipping branch creation"
-        } else {
-            Write-Host "Branch does not exist, proceeding with creation"
         }
-      shell: powershell
 
     - name: Create Xstore Branch
       if: ${{ env.skipStage != 'true' }}
       run: |
-        git clone "${{ env.REPOSITORY_XSTORE }}" "${{ github.workspace }}"
-        cd "${{ env.REPOSITORY_XSTORE }}"
+        git clone "${{ env.REPOSITORY_XSTORE }}" "${{ github.workspace }}/onr-xstore"
+        cd "onr-xstore"
         git checkout -b "${{ env.new_branch_version }}" "${{ env.base_branch_version }}"
         powershell.exe -File "${{ github.workspace }}/modify_for_new_branch.ps1" -workspacePath "${{ github.workspace }}" -branchHead "${{ env.base_branch_version }}" -branchMatcher "${{ env.new_branch_version }}" -newCustomerVersion "${{ env.new_cust_version }}" -isMinorBranch "${{ env.is_minor_branch }}"
         git commit -am "Commit from GitHub Actions"
