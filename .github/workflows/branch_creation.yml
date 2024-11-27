@@ -63,7 +63,7 @@ jobs:
     - name: Create Xstore Branch
       if: ${{ env.skipStage != 'true' }}
       run: |
-        git clone "${{ env.REPOSITORY_XSTORE }}" "${{ github.workspace }}/onr-xstore"
+        git clone "${{ env.REPOSITORY_XSTORE }}" "${{ github.workspace }}\onr-xstore"
         cd "onr-xstore"
         git checkout -b "${{ env.new_branch_version }}" "${{ env.base_branch_version }}"
         powershell.exe -File "${{ github.workspace }}/modify_for_new_branch.ps1" -workspacePath "${{ github.workspace }}" -branchHead "${{ env.base_branch_version }}" -branchMatcher "${{ env.new_branch_version }}" -newCustomerVersion "${{ env.new_cust_version }}" -isMinorBranch "${{ env.is_minor_branch }}"
