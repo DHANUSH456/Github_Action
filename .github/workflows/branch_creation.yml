@@ -58,25 +58,25 @@ jobs:
           Write-Host "Branch exists, skipping branch creation"
           echo "branch_found=true"
         } else {
-           Write-Host "Branch Doesn't exists, continue with branch creation"
+          Write-Host "Branch Doesn't exist, continue with branch creation"
         }
         echo "branch_found=$branch_found" >> $GITHUB_ENV
 
-      - name: Create Xstore Branch
-        if: ${{ env.branch_found != 'true' }}
-        run: |
-          $envDir="${{ github.workspace }}/onr-xstore"
-          Write-Host "Starting check out of xstore repository"
-          git clone "${{ env.REPOSITORY_XSTORE }}" $envDir
-          cd $envDir
-          git checkout -b "${{ env.new_branch_version }}" "${{ env.base_branch_version }}"
-          git config --global user.email "dhanush.v.ext@louisvuitton.com"
-          git config --global user.name "DHANUSH-LV"
-          Write-Host "xstore repository checkout finished."
-          powershell.exe -File "$envDir/lvm_devOps/auto_branch_create/modify_for_new_branch.ps1" -workspacePath "${{ github.workspace }}" -branchHead "${{ env.base_branch_version }}" -branchMatcher "${{ env.new_branch_version }}" -newCustomerVersion "${{ env.new_cust_version }}" -isMinorBranch "${{ env.is_minor_branch }}"
-          git commit -am "Commit from GitHub Actions"
-          git push origin "${{ env.new_branch_version }}"
-          Write-Host "New Branch created."    
+    - name: Create Xstore Branch
+      if: ${{ env.branch_found != 'true' }}
+      run: |
+        $envDir="${{ github.workspace }}/onr-xstore"
+        Write-Host "Starting check out of xstore repository"
+        git clone "${{ env.REPOSITORY_XSTORE }}" $envDir
+        cd $envDir
+        git checkout -b "${{ env.new_branch_version }}" "${{ env.base_branch_version }}"
+        git config --global user.email "dhanush.v.ext@louisvuitton.com"
+        git config --global user.name "DHANUSH-LV"
+        Write-Host "xstore repository checkout finished."
+        powershell.exe -File "$envDir/lvm_devOps/auto_branch_create/modify_for_new_branch.ps1" -workspacePath "${{ github.workspace }}" -branchHead "${{ env.base_branch_version }}" -branchMatcher "${{ env.new_branch_version }}" -newCustomerVersion "${{ env.new_cust_version }}" -isMinorBranch "${{ env.is_minor_branch }}"
+        git commit -am "Commit from GitHub Actions"
+        git push origin "${{ env.new_branch_version }}"
+        Write-Host "New Branch created."    
 
     - name: Create ARTIFACTS Branch
       if: ${{ env.branch_found != 'true' }}
@@ -130,10 +130,10 @@ jobs:
       
     - name: Send Email Notification
       uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: ${{vars.LV_SMTP_SERVER}}
-          server_port: ${{vars.LV_SMTP_PORT}}
-          subject: "New branch created ${{ env.new_branch_version }}"
-          to: "dhanush.v.ext@louisvuitton.com"
-          from: ${{vars.LV_SMTP_SENDER}}
-          body: "This is success message please ignore this message"
+      with:
+        server_address: ${{ vars.LV_SMTP_SERVER }}
+        server_port: ${{ vars.LV_SMTP_PORT }}
+        subject: "New branch created ${{ env.new_branch_version }}"
+        to: "dhanush.v.ext@louisvuitton.com"
+        from: ${{ vars.LV_SMTP_SENDER }}
+        body: "This is success message, please ignore this message"
