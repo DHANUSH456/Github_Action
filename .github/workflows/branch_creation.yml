@@ -51,13 +51,16 @@ jobs:
         echo "skipStage=$skipStage" >> $GITHUB_ENV
 
     - name: Check if Branch Exists
+      shell: pwsh
       run: |
         echo "branch_found=false"
+        Write-Host "Checking if branch $env:new_branch_version exists..."
         $branchesList = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern $env:new_branch_version
         foreach ($item in $branchesList) {
           $processingItem = $item.ToString().Trim()
+          
           if (-not $branchFound -and $processingItem.EndsWith("refs/heads/$env:new_branch_version")) {
-            Write-Host "Branch exists"
+            Write-Host "Branch $env:new_branch_version exists"
             echo "branch_found=true"
             Write-Host "Item found: $processingItem"
             break
@@ -67,6 +70,7 @@ jobs:
           Write-Host "Branch found... stopping early"
           exit 1
         }
+        Write-Host "Branch $env:new_branch_version does not exist"
         echo "branch_found=$branch_found" >> $GITHUB_ENV
 
     - name: Create Xstore Branch
