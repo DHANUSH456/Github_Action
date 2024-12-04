@@ -21,137 +21,134 @@ on:
 
 jobs:
   BRANCH_CREATION:
-    runs-on: windows-latest
+    runs-on: lv-pool-windows
     env:
       REPOSITORY_XSTORE: "https://github.com/DHANUSH456/onr-xstore.git"
       REPOSITORY_ARTIFACTS: "https://github.com/DHANUSH456/onr-artifatcs3.git"
       REPOSITORY_MNT: "https://github.com/LouisVuitton/onr-mnt-ci.git"
+      REPOSITORY_UTIL: "https://github.com/LouisVuitton/onr-util.git"
+      BASE_BRANCH_VERSION: "${{ github.event.inputs.base_branch_version }}"
       NEW_BRANCH_VERSION: "${{ github.event.inputs.new_branch_version }}"
+      NEW_CUST_VERSION: "${{ github.event.inputs.new_cust_version }}"
+      IS_MINOR_BRANCH: "${{ github.event.inputs.is_minor_branch }}"
+      LAST_TAG: "${{ github.event.inputs.last_tag }}"
       
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: Clean workspace
-        run: Remove-Item -Recurse -Force *.* -ErrorAction Ignore
+    - name: Clean workspace
+      run: Remove-Item -Recurse -Force *.* -ErrorAction Ignore
 
-      - name: User Input Parameters
-        run: |
-          echo "base_branch_version=${{ github.event.inputs.base_branch_version }}" >> $GITHUB_ENV
-          echo "new_cust_version=${{ github.event.inputs.new_cust_version }}" >> $GITHUB_ENV
-          echo "is_minor_branch=${{ github.event.inputs.is_minor_branch }}" >> $GITHUB_ENV
-          echo "last_tag=${{ github.event.inputs.last_tag }}" >> $GITHUB_ENV
+    - name: Validate User Input
+      run: |
+        echo "skipStage=false"
+        if ("${{ env.IS_MINOR_BRANCH }}" -eq "true") {
+          echo "skipStage=true"
+        }
+        echo "skipStage=$skipStage" >> $GITHUB_ENV
 
-      - name: Validate User Input
-        run: |
-          echo "skipStage=false"
-          if ($env:is_minor_branch -eq "true") {
-            echo "skipStage=true"
+    - name: Check if Branch Exists
+      run: |
+        echo "branch_found=false"
+        $branchesList = git ls-remote --heads ${{ env.REPOSITORY_XSTORE }} | Select-String -Pattern ${{ env.NEW_BRANCH_VERSION }}
+        foreach ($item in $branchesList) {
+          $processingItem = $item.ToString().Trim()
+          if (-not $branchFound -and $processingItem.EndsWith("refs/heads/${{ env.NEW_BRANCH_VERSION }}")) {
+            Write-Host "Branch exists"
+            echo "branch_found=true"
+            Write-Host "Item found: $processingItem"
+            break
           }
-          echo "skipStage=$skipStage" >> $GITHUB_ENV
+        }
+        if ($branchFound -eq $true) {
+          Write-Host "Branch found... stopping early"
+          exit 1
+        }
+        echo "branch_found=$branch_found" >> $GITHUB_ENV
 
-      - name: Debug - Check new_branch_version
-        run: |
-          Write-Host "New Branch Version: ${{ github.event.inputs.new_branch_version }}"
-          Write-Host "Checking: $env:REPOSITORY_XSTORE"
+    - name: Create Xstore Branch
+      if: ${{ env.branch_found != 'true' }}
+      run: |
+        $envDir="${{ github.workspace }}/onr-xstore"
+        Write-Host "Starting check out of xstore repository"
+        git clone "${{ env.REPOSITORY_XSTORE }}" $envDir
+        cd $envDir
+        git checkout -b "${{ env.NEW_BRANCH_VERSION }}" "${{ env.BASE_BRANCH_VERSION }}"
+        git config --global user.email "dhanush.v.ext@louisvuitton.com"
+        git config --global user.name "DHANUSH-LV"
+        Write-Host "xstore repository checkout finished."
+        powershell.exe -File "$envDir/lvm_devOps/auto_branch_create/modify_for_new_branch.ps1" -workspacePath "${{ github.workspace }}" -branchHead "${{ env.BASE_BRANCH_VERSION }}" -branchMatcher "${{ env.NEW_BRANCH_VERSION }}" -newCustomerVersion "${{ env.NEW_CUST_VERSION }}" -isMinorBranch "${{ env.IS_MINOR_BRANCH }}"
+        git commit -am "Commit from GitHub Actions"
+        git push origin "${{ env.NEW_BRANCH_VERSION }}"
+        Write-Host "New Branch created."    
 
-      - name: Check if Branch Exists
-        shell: pwsh
-        run: |
-          $branchFound = $false
-          Write-Host "Checking branch ${{ env.NEW_BRANCH_VERSION }}"
-          $branchesList = git ls-remote --heads ${{ env.REPOSITORY_XSTORE }} | Select-String -Pattern ${{ env.NEW_BRANCH_VERSION }}
-          Write-Host "Branches List: $branchesList"
-          foreach ($item in $branchesList) {
-            $processingItem = $item.ToString().Trim()
-            if (-not $branchFound -and $processingItem.EndsWith("refs/heads/${{ env.NEW_BRANCH_VERSION }}")) {
-              Write-Host "Branch ${{ env.NEW_BRANCH_VERSION }} exists"
-              $branchFound = $true
-              Write-Host "Item found: $processingItem"
-              break
-            }
-          }
-          
-          if ($branchFound -eq $true) {
-            Write-Host "Branch found... stopping early"
-            exit 1
-          }
+    - name: Create ARTIFACTS Branch
+      if: ${{ env.branch_found != 'true' }}
+      run: |
+        $envDir="${{ github.workspace }}/onr-artifatcs3"
+        Write-Host "Starting check out of ARTIFACTS repository"
+        git clone "${{ env.REPOSITORY_ARTIFACTS }}" $envDir
+        cd $envDir
+        git checkout -b "18.0.3.0.75_${{ env.NEW_BRANCH_VERSION }}" "18.0.3.0.75_${{ env.BASE_BRANCH_VERSION }}"
+        Write-Host "ARTIFACTS repository checkout finished."
+        git push origin "18.0.3.0.75_${{ env.NEW_BRANCH_VERSION }}"
+        Write-Host "New branch created."
 
-          Write-Host "Branch ${{ env.NEW_BRANCH_VERSION }} does not exist"
-          echo "branch_found=$branchFound" >> $GITHUB_ENV
+    - name: Create MNT Branches
+      if: ${{ env.skipStage != 'true' }}
+      run: |
+        $envDir="${{ github.workspace }}/onr-mnt-ci"
+        Remove-Item -Path $envDir -Recurse -Force -ErrorAction Ignore
+        git clone --branch "MNT_${{ env.BASE_BRANCH_VERSION }}" "${{ env.REPOSITORY_MNT }}" $envDir
+        powershell.exe -File "${{ github.workspace }}/onr-mnt-ci/new_setup/setup_new_branch.ps1" -workspacePath "${{ github.workspace }}" -branchMatcher "${{ env.NEW_BRANCH_VERSION }}" -branchHead "${{ env.BASE_BRANCH_VERSION }}" -mntBranchEnv "BCI"
+        Write-Host "New MNT branch setup completed."
 
-      - name: Create Xstore Branch
-        if: ${{ env.branch_found != 'true' }}
-        run: |
-          $envDir="${{ github.workspace }}/onr-xstore"
-          Write-Host "Starting checkout of Xstore repository"
-          git clone "${{ env.REPOSITORY_XSTORE }}" $envDir
-          cd $envDir
-          git checkout -b "${{ env.new_branch_version }}" "${{ env.base_branch_version }}"
-          git config --global user.email "dhanush.v.ext@louisvuitton.com"
-          git config --global user.name "DHANUSH-LV"
-          Write-Host "Xstore repository checkout finished."
-          powershell.exe -File "$envDir/lvm_devOps/auto_branch_create/modify_for_new_branch.ps1" -workspacePath "${{ github.workspace }}" -branchHead "${{ env.base_branch_version }}" -branchMatcher "${{ env.new_branch_version }}" -newCustomerVersion "${{ env.new_cust_version }}" -isMinorBranch "${{ env.is_minor_branch }}"
-          git commit -am "Commit from GitHub Actions"
-          git push origin "${{ env.new_branch_version }}"
-          Write-Host "New Branch created."    
+    - name: Modify Head MNT Branch for Downstream Merge
+      if: ${{ env.skipStage != 'true' }}
+      run: |
+        powershell.exe -File "${{ github.workspace }}/onr-mnt-ci/new_setup/modify_head_branch.ps1" -workspacePath "${{ github.workspace }}" -branchMatcher "${{ env.NEW_BRANCH_VERSION }}" -branchHead "${{ env.BASE_BRANCH_VERSION }}"
+        Write-Host "Modify Head MNT Branch for downstream merge completed."
 
-      - name: Create ARTIFACTS Branch
-        if: ${{ env.branch_found != 'true' }}
-        run: |
-          $envDir="${{ github.workspace }}/onr-artifatcs3"
-          Write-Host "Starting checkout of ARTIFACTS repository"
-          git clone "${{ env.REPOSITORY_ARTIFACTS }}" $envDir
-          cd $envDir
-          git checkout -b "18.0.3.0.75_${{ env.new_branch_version }}" "18.0.3.0.75_${{ env.base_branch_version }}"
-          Write-Host "ARTIFACTS repository checkout finished."
-          git push origin "18.0.3.0.75_${{ env.new_branch_version }}"
-          Write-Host "New branch created."
-
-      - name: Create MNT Branches
-        if: ${{ env.skipStage != 'true' }}
-        run: |
-          $envDir="${{ github.workspace }}/onr-mnt-ci"
+    - name: CMDB - BitBucket Changes
+      if: ${{ env.skipStage != 'true' }}
+      run: |
+        $envList = @('PT2', 'UAT')
+        foreach ($env in $envList) {
+          $envDir = "${{ github.workspace }}/$env"
           Remove-Item -Path $envDir -Recurse -Force -ErrorAction Ignore
-          git clone --branch "MNT_${{ env.base_branch_version }}" "${{ env.REPOSITORY_MNT }}" $envDir
-          powershell.exe -File "${{ github.workspace }}/onr-mnt-ci/new_setup/setup_new_branch.ps1" -workspacePath "${{ github.workspace }}" -branchMatcher "${{ env.new_branch_version }}" -branchHead "${{ env.base_branch_version }}" -mntBranchEnv "BCI"
-          Write-Host "New MNT branch setup completed."
-
-      - name: Modify Head MNT Branch for Downstream Merge
-        if: ${{ env.skipStage != 'true' }}
-        run: |
-          powershell.exe -File "${{ github.workspace }}/onr-mnt-ci/new_setup/modify_head_branch.ps1" -workspacePath "${{ github.workspace }}" -branchMatcher "${{ env.new_branch_version }}" -branchHead "${{ env.base_branch_version }}"
-          Write-Host "Modify Head MNT Branch for downstream merge completed."
-
-      - name: CMDB - BitBucket Changes
-        if: ${{ env.skipStage != 'true' }}
-        run: |
-          $envList = @('PT2', 'UAT')
-          foreach ($env in $envList) {
-            $envDir = "${{ github.workspace }}/$env"
-            Remove-Item -Path $envDir -Recurse -Force -ErrorAction Ignore
-            if ($env -eq 'PT2') {
-              git clone --branch "CMDB_$env" "https://github.com/LouisVuitton/onr-cmdb.git" $envDir
-            } else {
-              git clone --branch "CMDB_$env" "https://github.com/LouisVuitton/onr-cmdb-prd.git" $envDir
-            }
-            powershell.exe -File "$envDir/Tools/CMDB_New_Xstore_Branch_Setup.ps1" -workspacePath "${{ github.workspace }}" -branchMatcher "${{ env.new_branch_version }}" -branchHead "${{ env.base_branch_version }}" -cmdbEnv $env
+          if ($env -eq 'PT2') {
+            git clone --branch "CMDB_$env" "https://github.com/LouisVuitton/onr-cmdb.git" $envDir
+          } else{
+            git clone --branch "CMDB_$env" "https://github.com/LouisVuitton/onr-cmdb-prd.git" $envDir
           }
-          Write-Host "CMDB file changes finished."
+          powershell.exe -File "$envDir/Tools/CMDB_New_Xstore_Branch_Setup.ps1" -workspacePath "${{ github.workspace }}" -branchMatcher "${{ env.NEW_BRANCH_VERSION }}" -branchHead "${{ env.base_branch_version }}" -cmdbEnv $env
+        }
+        Write-Host "CMDB file changes finished."
 
-      - name: CMDB - UI Changes
-        if: ${{ env.skipStage != 'true' }}
-        run: |
-          $prdhost = "oneretail-cmdb.vuitton.net:8443"
-          Invoke-WebRequest -Uri "https://$prdhost/API/Cmdb/CmdbVersion?version=${{ env.new_branch_version }}&referenceVersion=${{ env.base_branch_version }}" -Method Put -UseDefaultCredentials
-          Write-Host "CMDB UI update finished."
+    - name: CMDB - UI Changes
+      if: ${{ env.skipStage != 'true' }}
+      run: |
+        $prdhost = "oneretail-cmdb.vuitton.net:8443"
+        Invoke-WebRequest -Uri "https://$prdhost/API/Cmdb/CmdbVersion?version=${{ env.NEW_BRANCH_VERSION }}&referenceVersion=${{ env.base_branch_version }}" -Method Put -UseDefaultCredentials
+        Write-Host "CMDB UI update finished finished."
 
-      - name: Send Email Notification
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: ${{ vars.LV_SMTP_SERVER }}
-          server_port: ${{ vars.LV_SMTP_PORT }}
-          subject: "New branch created ${{ env.new_branch_version }}"
-          to: "dhanush.v.ext@louisvuitton.com"
-          from: ${{ vars.LV_SMTP_SENDER }}
-          body: "This is a success message, please ignore this message."
+    - name: Release notes changes
+      if: ${{ env.skipStage != 'true' }}
+      run: |
+        $envDir="${{ github.workspace }}/onr-util"
+        Write-Host "Starting check out of util repository"
+        git clone "${{ env.REPOSITORY_UTIL }}" $envDir
+        cd $envDir
+        powershell.exe -File "$envDir/new_branch_cut/script/Modify_for_Release_Notes.ps1" -workspacePath "${{ github.workspace }}" -branchHead "${{ env.base_branch_version }}" -branchMatcher "${{ env.NEW_BRANCH_VERSION }}" -lastTag "${{ env.LAST_TAG }}"
+        Write-Host "Release notes changes are done"
+
+    - name: Send Email Notification
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: ${{ vars.LV_SMTP_SERVER }}
+        server_port: ${{ vars.LV_SMTP_PORT }}
+        subject: "New branch created ${{ env.NEW_BRANCH_VERSION }}"
+        to: "dhanush.v.ext@louisvuitton.com"
+        from: ${{ vars.LV_SMTP_SENDER }}
+        body: "This is success message, please ignore this message"
