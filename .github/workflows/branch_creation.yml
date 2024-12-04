@@ -53,12 +53,19 @@ jobs:
     - name: Check if Branch Exists
       run: |
         echo "branch_found=false"
-        $branchExists = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern "refs/heads/$env:new_branch_version"
-        if ($branchExists) {
-          Write-Host "Branch exists, skipping branch creation"
-          echo "branch_found=true"
-        } else {
-          Write-Host "Branch Doesn't exist, continue with branch creation"
+        $branchesList = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern $env:new_branch_version
+        foreach ($item in $branchesList) {
+          $processingItem = $item.ToString().Trim()
+          if (-not $branchFound -and $processingItem.EndsWith("refs/heads/$env:new_branch_version")) {
+            Write-Host "Branch exists"
+            echo "branch_found=true"
+            Write-Host "Item found: $processingItem"
+            break
+          }
+        }
+        if ($branchFound -eq $true) {
+          Write-Host "Branch found... stopping early"
+          exit 1
         }
         echo "branch_found=$branch_found" >> $GITHUB_ENV
 
