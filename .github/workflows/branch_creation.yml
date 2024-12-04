@@ -66,6 +66,7 @@ jobs:
           }
 
           Write-Host "Checking branch $env:new_branch_version"
+          Write-Host "Checking $env:REPOSITORY_XSTORE"
           $branchesList = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern $env:new_branch_version
           Write-Host "Branches List: $branchesList"
           foreach ($item in $branchesList) {
