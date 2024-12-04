@@ -21,7 +21,7 @@ on:
 
 jobs:
   BRANCH_CREATION:
-    runs-on: lv-pool-windows
+    runs-on: windows-latest
     env:
       REPOSITORY_XSTORE: "https://github.com/DHANUSH456/onr-xstore.git"
       REPOSITORY_ARTIFACTS: "https://github.com/DHANUSH456/onr-artifatcs3.git"
