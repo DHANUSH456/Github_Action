@@ -59,19 +59,19 @@ jobs:
         shell: pwsh
         run: |
           $branchFound = $false
-          Write-Host "Checking if branch $env:new_branch_version exists..."
-          if (-not $env:new_branch_version) {
+          Write-Host "Checking if branch ${{ env.new_branch_version }} exists..."
+          if (-not ${{ env.new_branch_version }}) {
             Write-Host "Error: 'new_branch_version' is not set!"
             exit 1
           }
 
           Write-Host "Checking branch $env:new_branch_version"
-          $branchesList = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern $env:new_branch_version
+          $branchesList = git ls-remote --heads ${{ env.REPOSITORY_XSTORE }} | Select-String -Pattern ${{ env.new_branch_version }}
           Write-Host "Branches List: $branchesList"
           foreach ($item in $branchesList) {
             $processingItem = $item.ToString().Trim()
-            if (-not $branchFound -and $processingItem.EndsWith("refs/heads/$env:new_branch_version")) {
-              Write-Host "Branch $env:new_branch_version exists"
+            if (-not $branchFound -and $processingItem.EndsWith("refs/heads/${{ env.new_branch_version }}")) {
+              Write-Host "Branch ${{ env.new_branch_version }} exists"
               $branchFound = $true
               Write-Host "Item found: $processingItem"
               break
