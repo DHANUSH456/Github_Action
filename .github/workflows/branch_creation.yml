@@ -53,20 +53,20 @@ jobs:
       - name: Debug - Check new_branch_version
         run: |
           Write-Host "New Branch Version: ${{ github.event.inputs.new_branch_version }}"
+
       
       - name: Check if Branch Exists
         shell: pwsh
         run: |
           $branchFound = $false
           Write-Host "Checking if branch $env:new_branch_version exists..."
-          
+           Write-Host "Checking $env:REPOSITORY_XSTORE"
           if (-not $env:new_branch_version) {
             Write-Host "Error: 'new_branch_version' is not set!"
             exit 1
           }
 
           Write-Host "Checking branch $env:new_branch_version"
-          Write-Host "Checking $env:REPOSITORY_XSTORE"
           $branchesList = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern $env:new_branch_version
           Write-Host "Branches List: $branchesList"
           foreach ($item in $branchesList) {
