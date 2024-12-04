@@ -59,12 +59,6 @@ jobs:
         shell: pwsh
         run: |
           $branchFound = $false
-          Write-Host "Checking if branch ${{ env.NEW_BRANCH_VERSION }} exists..."
-          if (-not ${{ env.NEW_BRANCH_VERSION }}) {
-            Write-Host "Error: 'new_branch_version' is not set!"
-            exit 1
-          }
-
           Write-Host "Checking branch ${{ env.NEW_BRANCH_VERSION }}"
           $branchesList = git ls-remote --heads ${{ env.REPOSITORY_XSTORE }} | Select-String -Pattern ${{ env.NEW_BRANCH_VERSION }}
           Write-Host "Branches List: $branchesList"
