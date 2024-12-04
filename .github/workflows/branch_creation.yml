@@ -72,9 +72,9 @@ jobs:
       run: |
         $envDir="${{ github.workspace }}/onr-xstore"
         Write-Host "Starting check out of xstore repository"
-        git clone "${{ env.REPOSITORY_XSTORE }}" $envDir
+        git clone --branch "${{ env.BASE_BRANCH_VERSION }}" "${{ env.REPOSITORY_XSTORE }}" $envDir
         cd $envDir
-        git checkout -b "${{ env.NEW_BRANCH_VERSION }}" "${{ env.BASE_BRANCH_VERSION }}"
+        git checkout -b "${{ env.NEW_BRANCH_VERSION }}"
         git config --global user.email "dhanush.v.ext@louisvuitton.com"
         git config --global user.name "DHANUSH-LV"
         Write-Host "xstore repository checkout finished."
