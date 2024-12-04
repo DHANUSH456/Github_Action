@@ -50,28 +50,43 @@ jobs:
         }
         echo "skipStage=$skipStage" >> $GITHUB_ENV
 
+    - name: Debug - Check new_branch_version
+      run: |
+        Write-Host "New Branch Version: $env:new_branch_version"
+    
     - name: Check if Branch Exists
       shell: pwsh
       run: |
-        echo "branch_found=false"
+        $branchFound = $false
         Write-Host "Checking if branch $env:new_branch_version exists..."
+        
+        # Check if the environment variable new_branch_version is properly set
+        if (-not $env:new_branch_version) {
+          Write-Host "Error: 'new_branch_version' is not set!"
+          exit 1
+        }
+
+        # Get branches from the remote repository
         $branchesList = git ls-remote --heads $env:REPOSITORY_XSTORE | Select-String -Pattern $env:new_branch_version
         foreach ($item in $branchesList) {
           $processingItem = $item.ToString().Trim()
           
           if (-not $branchFound -and $processingItem.EndsWith("refs/heads/$env:new_branch_version")) {
             Write-Host "Branch $env:new_branch_version exists"
-            echo "branch_found=true"
+            $branchFound = $true
             Write-Host "Item found: $processingItem"
             break
           }
         }
+        
+        # If the branch is found, stop early and fail the job
         if ($branchFound -eq $true) {
           Write-Host "Branch found... stopping early"
-          exit 1
+          exit 1  # Exit with error to stop the job
         }
+        
         Write-Host "Branch $env:new_branch_version does not exist"
-        echo "branch_found=$branch_found" >> $GITHUB_ENV
+        echo "branch_found=$branchFound" >> $GITHUB_ENV
 
     - name: Create Xstore Branch
       if: ${{ env.branch_found != 'true' }}
