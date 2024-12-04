@@ -52,7 +52,7 @@ jobs:
 
     - name: Debug - Check new_branch_version
       run: |
-        Write-Host "New Branch Version: $env.new_branch_version"
+        Write-Host "New Branch Version: ${{ env.new_branch_version }}"
     
     - name: Check if Branch Exists
       shell: pwsh
