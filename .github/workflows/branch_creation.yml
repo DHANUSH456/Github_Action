@@ -159,4 +159,6 @@ jobs:
           server_address: ${{ vars.LV_SMTP_SERVER }}
           server_port: ${{ vars.LV_SMTP_PORT }}
           subject: "New branch created ${{ env.new_branch_version }}"
-          to: "dhanush
+          to: "dhanush.v.ext@louisvuitton.com"
+          from: ${{ vars.LV_SMTP_SENDER }}
+          body: "This is a success message, please ignore this message."
