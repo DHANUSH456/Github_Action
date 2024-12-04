@@ -60,7 +60,7 @@ jobs:
         run: |
           $branchFound = $false
           Write-Host "Checking if branch $env:new_branch_version exists..."
-           Write-Host "Checking $env:REPOSITORY_XSTORE"
+          Write-Host "Checking $env:REPOSITORY_XSTORE"
           if (-not $env:new_branch_version) {
             Write-Host "Error: 'new_branch_version' is not set!"
             exit 1
